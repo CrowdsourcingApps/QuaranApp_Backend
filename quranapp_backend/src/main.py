@@ -1,5 +1,6 @@
 import sys
 import os
+import src.startup as startup
 from fastapi import FastAPI
 from src.controllers import recordings, users, settings
 
@@ -12,3 +13,5 @@ app = FastAPI()
 app.include_router(users)
 app.include_router(recordings)
 app.include_router(settings)
+
+startup.apply_migrations()
