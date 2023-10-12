@@ -1,0 +1,5 @@
+*.md
+*.mmd
+LICENSE
+.env.example
+.gitignore

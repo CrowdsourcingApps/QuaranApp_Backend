@@ -3,7 +3,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 # Поменять здесь при настройке Postgres в Docker
-SQLALCHEMY_DATABASE_URL = "postgresql://username:password@localhost/quranapp"
+SQLALCHEMY_DATABASE_URL = "postgresql://myuser:mypassword@localhost/mydatabase"
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
