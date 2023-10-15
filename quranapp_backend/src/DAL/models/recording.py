@@ -5,7 +5,7 @@ from sqlalchemy import Column, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 
-from src.DAL.database import Base
+from src.dal.database import Base
 
 
 class Recording(Base):

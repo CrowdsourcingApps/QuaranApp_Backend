@@ -1,5 +1,5 @@
 import subprocess
-from src.DAL.database import SessionLocal
+from src.dal.database import SessionLocal
 
 
 def apply_migrations():

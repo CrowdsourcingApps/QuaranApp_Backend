@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from src.DAL.database import SessionLocal
+from src.dal.database import SessionLocal
 from sqlalchemy import text
 
 settings_router = APIRouter(

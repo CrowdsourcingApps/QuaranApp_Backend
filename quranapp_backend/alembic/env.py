@@ -5,8 +5,8 @@ from sqlalchemy import pool
 
 from alembic import context
 
-from src.DAL.database import Base
-from src.DAL.models import User, AyahPart, Recording
+from src.dal.database import Base
+from src.dal.models import User, AyahPart, Recording
 import src.config as AppConfig
 
 # this is the Alembic Config object, which provides

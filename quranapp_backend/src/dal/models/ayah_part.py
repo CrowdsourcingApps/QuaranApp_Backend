@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy import Column
 from sqlalchemy.dialects.postgresql import UUID
 
-from src.DAL.database import Base
+from src.dal.database import Base
 
 
 class AyahPart(Base):

@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from src.models.professionalAudio import ProfessionalAudio
+from src.models.professional_audio import ProfessionalAudio
 
 
 class AudioResponse(BaseModel):
