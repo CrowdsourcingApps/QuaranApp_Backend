@@ -13,6 +13,8 @@ services:
       context: .
       dockerfile: Dockerfile
     env_file: .env
+    volumes:
+      - ./quranapp_backend:/app/quranapp_backend
     ports:
       - "8000:8000"
 
