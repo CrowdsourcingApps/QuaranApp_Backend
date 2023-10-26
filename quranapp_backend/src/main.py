@@ -14,4 +14,6 @@ app.include_router(users)
 app.include_router(recordings)
 app.include_router(settings)
 
+
 startup.apply_migrations()
+# startup.initial_database_fill()
