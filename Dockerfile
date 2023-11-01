@@ -12,4 +12,10 @@ FROM build AS runtime
 
 EXPOSE $PORT
 
+RUN ls
+
+WORKDIR /app/quranapp_backend
+
+RUN ls
+
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT
