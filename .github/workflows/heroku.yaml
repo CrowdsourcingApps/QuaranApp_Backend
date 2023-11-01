@@ -20,8 +20,7 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "quranapp"
           heroku_email: "nursultan@outlook.com"
-          buildpack: "heroku/python"
-          appdir: "quranapp_backend"
+          stack: "container"
           branch: "develop"
         env:
           HD_POSTGRES_USER: ${{secrets.POSTGRES_USER}}
