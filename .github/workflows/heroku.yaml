@@ -20,7 +20,7 @@ jobs:
           heroku_api_key: ${{secrets.HEROKU_API_KEY}}
           heroku_app_name: "quranapp"
           heroku_email: "nursultan@outlook.com"
-          stack: "container"
+          usedocker: true
           branch: "develop"
         env:
           HD_POSTGRES_USER: ${{secrets.POSTGRES_USER}}
