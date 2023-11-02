@@ -6,9 +6,6 @@ from src.controllers import recordings, users, settings
 
 print(os.getcwd())
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
-
 app = FastAPI()
 
 # Include routers in the app
