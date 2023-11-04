@@ -2,5 +2,7 @@ from pydantic import BaseModel
 
 
 class User(BaseModel):
-    id: int
+    id: str
     alias: str
+    name: str
+    surname: str
