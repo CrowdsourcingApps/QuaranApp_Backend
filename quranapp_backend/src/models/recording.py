@@ -3,18 +3,20 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from .ayah_part import AyahPartSearch, AyahPart
+from src.dal.enums import RiwayahEnum
+from src.models.ayah_part import AyahPartSearch, AyahPart
 
 
 class RecordingCreate(BaseModel):
     start: AyahPartSearch
     end: AyahPartSearch
-    user_id: str #возможно, пользователь будет передаваться как-то по-другому
+    user_id: str  # возможно, пользователь будет передаваться как-то по-другому
+    riwayah: RiwayahEnum
 
 
 class Recording(BaseModel):
     id: uuid.UUID
-    #user:
+    #todo user:
     start: AyahPart
     end: AyahPart
     audio_url: str

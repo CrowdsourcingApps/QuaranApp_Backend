@@ -1,8 +1,8 @@
-import uuid
 import subprocess
 
 from src.dal.database import SessionLocal
-from src.dal.models import User, AyahPart
+from src.dal.enums import RiwayahEnum
+from src.dal.models import User, AyahPart, Ayah
 
 
 def apply_migrations():
@@ -18,15 +18,14 @@ def apply_migrations():
 def initial_database_fill():
     # Fill database with initial data
     with SessionLocal() as session:
-        if session.query(User).count() == 0:
-            user = User(id="some_str")
+        if session.query(User).count() == 0 and session.query(AyahPart).count() == 0 and session.query(Ayah).count() == 0:
+            user = User(name="Test", alias="test", surname="Testov", id="1")
             session.add(user)
-            print("Added user")
-        #todo fix creation of ayah parts
-        if session.query(AyahPart).count() == 0:
-            ayah_part_1 = AyahPart(id=uuid.uuid4())
-            ayah_part_2 = AyahPart(id=uuid.uuid4())
-            session.add(ayah_part_1)
-            session.add(ayah_part_2)
-            print("Added ayah parts")
-        session.commit()
+            ayah = Ayah(surah_number=1, ayah_in_surah_number=2, riwayah=RiwayahEnum.QALOON)
+            session.add(ayah)
+            ayah_part1 = AyahPart(ayah=ayah, part_number=0)
+            ayah_part2 = AyahPart(ayah=ayah, part_number=1)
+            session.add(ayah_part1)
+            session.add(ayah_part2)
+            session.commit()
+            print("Added user, ayah and ayah parts initial data")

@@ -23,4 +23,4 @@ app.include_router(settings)
 
 
 startup.apply_migrations()
-# startup.initial_database_fill()
+startup.initial_database_fill()

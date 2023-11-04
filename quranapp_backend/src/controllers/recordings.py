@@ -26,9 +26,12 @@ def upload_recording(
         recording_data: Annotated[str, Depends(transform_recording_data)],
         db: Session = Depends(get_db_session)
 ):
-    #todo implement getting user from db
-    user = User(id=uuid.uuid4())
-    start, end = ayah_parts.get_ayah_part(db, recording_data.start), ayah_parts.get_ayah_part(db, recording_data.end) # noqa
+    user = UserService.instance().get_user_by_id(recording_data.user_id)  # noqa
+    if not user:
+        raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+
+    start = ayah_parts.get_ayah_part(db, recording_data.start, recording_data.riwayah)  # noqa
+    end = ayah_parts.get_ayah_part(db, recording_data.end, recording_data.riwayah) # noqa
 
     if not all([start, end]):
         message = ""
@@ -42,7 +45,7 @@ def upload_recording(
 
     audio_url = azure_blob_storage.upload_file(filename=f"audio_{uuid.uuid4()}.mp3", file=audio_file.file)
 
-    return recordings.create_recording(db=db, user=user, start=start, end=end, audio_url=audio_url)
+    return recordings.create_recording(db=db, user_id=user.id, start=start, end=end, audio_url=audio_url)
 
 
 @recordings_router.delete("/{recording_id}")
