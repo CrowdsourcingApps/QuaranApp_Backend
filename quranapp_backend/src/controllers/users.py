@@ -8,7 +8,7 @@ user_router = APIRouter(
 )
 
 
-@user_router.get("/{user_id}")
+@user_router.get("/{user_id}", response_model=UserModel)
 def get_user(user_id: str) -> UserModel:
     user = UserService.instance().get_user_by_id(user_id)
     if user is None:
@@ -17,7 +17,7 @@ def get_user(user_id: str) -> UserModel:
     return user
 
 
-@user_router.get("/find/{user_alias}")
+@user_router.get("/find/{user_alias}", response_model=UserModel)
 def find_user(user_alias: str) -> UserModel:
     user = UserService.instance().get_user_by_alias(user_alias)
     if user is None:
