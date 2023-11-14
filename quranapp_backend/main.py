@@ -5,8 +5,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from src.controllers import recordings, users, settings
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(os.path.dirname(SCRIPT_DIR))
+print(os.getcwd())
 
 app = FastAPI()
 
