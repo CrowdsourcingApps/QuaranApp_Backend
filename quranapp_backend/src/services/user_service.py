@@ -17,11 +17,21 @@ class UserService:
             cls.__instance = UserService()
         return cls.__instance
 
-    def get_user_by_id(self, user_id: str) -> UserModel:
-        return self.__get_user_by_value__(user_id, user_actions.get_user_by_id)
+    def get_user_by_id(self, user_id: str) -> UserModel | None:
+        user = user_actions.get_user_by_id(user_id)
 
-    def get_user_by_alias(self, alias: str) -> UserModel:
-        return self.__get_user_by_value__(alias, user_actions.get_user_by_alias)
+        if user is None:
+            return None
+
+        return user_mapper.map_to_model(user)
+
+    def get_user_by_alias(self, alias: str) -> UserModel | None:
+        user = user_actions.get_user_by_alias(alias)
+
+        if user is None:
+            return None
+
+        return user_mapper.map_to_model(user)
 
     @staticmethod
     def check_if_alias_exists(alias: str) -> bool:
@@ -37,12 +47,3 @@ class UserService:
         user_dal = user_mapper.map_to_dal(user)
         user_actions.add_user(user_dal)
         return {'message': 'User added successfully'}
-
-    @staticmethod
-    def __get_user_by_value__(value, func) -> UserModel:
-        user = func(value)
-
-        if user is None:
-            return None
-
-        return user_mapper.map_to_model(user)
