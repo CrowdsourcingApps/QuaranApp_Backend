@@ -13,6 +13,6 @@
 `alembic revision --autogenerate -m "Название миграции"
 `
 
-Применение миграции:
+Применение миграций:
 
 `alembic upgrade head`
