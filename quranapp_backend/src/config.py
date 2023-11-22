@@ -9,4 +9,3 @@ DB_NAME = "mydatabase" if os.environ.get('POSTGRES_DB') is None else os.environ.
 db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST_NAME}/{DB_NAME}'
 
 print("DB_HOST:  ", DB_HOST_NAME)
-print("db_url:  ", db_url)

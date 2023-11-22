@@ -16,3 +16,9 @@ def get_ping_db():
             print('\n\n----------- Connection successful !')
         except Exception as e:
             print('\n\n----------- Connection failed ! ERROR : ', e)
+    # return True
+
+
+@settings_router.get("/200")
+def get_ok():
+    return True
