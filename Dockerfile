@@ -10,7 +10,4 @@ RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 
 EXPOSE $PORT
 
-RUN rm /bin/sh && ln -s /bin/bash /bin/sh
-
-CMD while true; do sleep 1; done
-# CMD uvicorn main:app --host 0.0.0.0 --port $PORT --reload
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT --reload
