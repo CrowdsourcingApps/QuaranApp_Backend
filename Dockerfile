@@ -8,8 +8,8 @@ WORKDIR /app/quranapp_backend
 
 RUN pip3 install --no-cache-dir --upgrade -r requirements.txt
 
-FROM build AS runtime
-
 EXPOSE $PORT
+
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
 CMD uvicorn main:app --host 0.0.0.0 --port $PORT --reload
