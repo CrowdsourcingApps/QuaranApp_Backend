@@ -3,7 +3,7 @@ import os
 import src.startup as startup
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from src.controllers import settings
+from src.controllers import settings, users, settings
 
 print(os.getcwd())
 
