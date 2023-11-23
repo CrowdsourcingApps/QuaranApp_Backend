@@ -12,4 +12,4 @@ FROM build AS runtime
 
 EXPOSE $PORT
 
-CMD vicorn main:app --host 0.0.0.0 --port $PORT --reload
+CMD uvicorn main:app --host 0.0.0.0 --port $PORT --reload
