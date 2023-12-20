@@ -4,9 +4,8 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 
-from src.services import azure_blob_storage, recordings, ayah_parts
+from src.services import azure_blob_storage, recordings, ayah_parts, user_service
 from src.models import Recording
-from src.dal.models import User
 from .dependencies import get_db_session, transform_recording_data
 
 recordings_router = APIRouter(
@@ -26,7 +25,7 @@ def upload_recording(
         recording_data: Annotated[str, Depends(transform_recording_data)],
         db: Session = Depends(get_db_session)
 ):
-    user = UserService.instance().get_user_by_id(recording_data.user_id)  # noqa
+    user = user_service.UserService.instance().get_user_by_id(recording_data.user_id)
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
 
