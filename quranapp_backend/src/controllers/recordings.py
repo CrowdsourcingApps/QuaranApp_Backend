@@ -17,7 +17,7 @@ recordings_router = APIRouter(
 
 @recordings_router.get("/my/{user_id}", response_model=list[Recording])
 def get_my_recordings(user_id: str, db: Session = Depends(get_db_session)):
-    user = UserService.instance().get_user_by_id(user_id)  # noqa
+    user = user_service.UserService.instance().get_user_by_id(user_id)  # noqa
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
     return recordings_service.get_my_recordings(db, user.id)
