@@ -12,8 +12,27 @@ def create_recording(db: Session, user_id: str, start: AyahPart, end: AyahPart, 
     return db_recording
 
 
-def get_my_recordings(db: Session, user_id: str) -> list[Recording]:
-    return db.query(Recording).filter(Recording.user_id == user_id).all()
+def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
+    recordings = db.query(Recording).filter_by(user_id=user_id).all()
+    result = []
+    for recording in recordings:
+        start = recording.start
+        end = recording.end
+
+        result.append(DetailedRecording(
+            user_alias=recording.user.alias,
+            riwayah=start.ayah.riwayah,
+            start=AyahPartDetailed(
+                surah_number=start.ayah.surah_number,
+                ayah_in_surah_number=start.ayah.ayah_in_surah_number,
+                part_number=start.part_number),
+            end=AyahPartDetailed(
+                surah_number=end.ayah.surah_number,
+                ayah_in_surah_number=end.ayah.ayah_in_surah_number,
+                part_number=end.part_number),
+            created_at=recording.created_at))
+
+    return result
 
 
 def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
@@ -37,6 +56,13 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
             created_at=shared.recording.created_at))
 
     return result
+
+
+def get_available_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
+    my_recordings = get_my_recordings(db, user_id)
+    shared_recordings = get_shared_with_me_recordings(db, user_id)
+
+    return my_recordings + shared_recordings
 
 
 def share_recording(db: Session, recording_id: uuid.UUID, recipient_id: str) -> SharedRecording:
