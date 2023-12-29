@@ -4,12 +4,12 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from src.dal.enums import RiwayahEnum
-from src.models.ayah_part import AyahPartSearch, AyahPart
+from src.models.ayah_part import AyahPartDetailed, AyahPart
 
 
 class RecordingCreate(BaseModel):
-    start: AyahPartSearch
-    end: AyahPartSearch
+    start: AyahPartDetailed
+    end: AyahPartDetailed
     user_id: str  # возможно, пользователь будет передаваться как-то по-другому
     riwayah: RiwayahEnum
 
@@ -28,11 +28,17 @@ class Recording(BaseModel):
 
 class RecordingShare(BaseModel):
     recording_id: uuid.UUID
-    recipient_id: str
+    recipient_alias: str
 
 
 class SharedRecording(BaseModel):
-    id: uuid.UUID
     recording_id: uuid.UUID
-    recipient_id: str
+    created_at: datetime
+
+
+class DetailedRecording(BaseModel):
+    user_alias: str
+    riwayah: RiwayahEnum
+    start: AyahPartDetailed
+    end: AyahPartDetailed
     created_at: datetime

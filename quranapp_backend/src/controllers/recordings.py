@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 
 from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, user_service
-from src.models import Recording, RecordingShare, SharedRecording
+from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording
 from .dependencies import get_db_session, transform_recording_data
 
 recordings_router = APIRouter(
@@ -23,9 +23,12 @@ def get_my_recordings(user_id: str, db: Session = Depends(get_db_session)):
     return recordings_service.get_my_recordings(db, user.id)
 
 
-@recordings_router.get("/shared_with_me/{user_id}")
+@recordings_router.get("/shared_with_me/{user_id}", response_model=list[DetailedRecording])
 def get_shared_recordings(user_id: str, db: Session = Depends(get_db_session)):
-    pass
+    user = user_service.UserService.instance().get_user_by_id(user_id)  # noqa
+    if not user:
+        raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+    return recordings_service.get_shared_with_me_recordings(db, user.id)
 
 
 @recordings_router.post("/upload", response_model=Recording)
@@ -63,11 +66,15 @@ def delete_recording(recording_id):
 
 @recordings_router.post("/{recording_id}/share", response_model=SharedRecording)
 def share_recording(share_data: RecordingShare, db: Session = Depends(get_db_session)):
-    user = user_service.UserService.instance().get_user_by_id(share_data.recipient_id)
+    user = user_service.UserService.instance().get_user_by_alias(share_data.recipient_alias)
     if not user:
-        raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(detail="User not found by alias", status_code=status.HTTP_400_BAD_REQUEST)
 
-    if not recordings_service.is_recording_exist(db=db, recording_id=share_data.recording_id):
+    recording = recordings_service.get_recording_by_id(db=db, recording_id=share_data.recording_id)
+    if not recording:
         raise HTTPException(detail="Recording not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+    elif recording.user_id == user.id:
+        raise HTTPException(detail="Impossible to share recording with yourself",
+                            status_code=status.HTTP_400_BAD_REQUEST)
 
-    return recordings_service.share_recording(db=db, share_data=share_data)
+    return recordings_service.share_recording(db=db, recording_id=share_data.recording_id, recipient_id=user.id)
