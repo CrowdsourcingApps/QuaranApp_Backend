@@ -24,3 +24,15 @@ class Recording(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class RecordingShare(BaseModel):
+    recording_id: uuid.UUID
+    recipient_id: str
+
+
+class SharedRecording(BaseModel):
+    id: uuid.UUID
+    recording_id: uuid.UUID
+    recipient_id: str
+    created_at: datetime

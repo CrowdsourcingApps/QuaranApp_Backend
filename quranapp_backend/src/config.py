@@ -10,4 +10,4 @@ DB_SSL = "disable" if os.environ.get('DB_SSL') is None else os.environ.get('DB_S
 db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST_NAME}/{DB_NAME}?sslmode={DB_SSL}'
 
 print("DB_HOST:  ", DB_HOST_NAME)
-print("SSD TYPE:", DB_SSL)
+print("SSL TYPE:", DB_SSL)

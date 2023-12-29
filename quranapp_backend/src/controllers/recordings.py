@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 
 from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, user_service
-from src.models import Recording
+from src.models import Recording, RecordingShare, SharedRecording
 from .dependencies import get_db_session, transform_recording_data
 
 recordings_router = APIRouter(
@@ -61,6 +61,13 @@ def delete_recording(recording_id):
     pass
 
 
-@recordings_router.post("/{recording_id}/share")
-def share_recording(recording_id):
-    pass
+@recordings_router.post("/{recording_id}/share", response_model=SharedRecording)
+def share_recording(share_data: RecordingShare, db: Session = Depends(get_db_session)):
+    user = user_service.UserService.instance().get_user_by_id(share_data.recipient_id)
+    if not user:
+        raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+
+    if not recordings_service.is_recording_exist(db=db, recording_id=share_data.recording_id):
+        raise HTTPException(detail="Recording not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
+
+    return recordings_service.share_recording(db=db, share_data=share_data)
