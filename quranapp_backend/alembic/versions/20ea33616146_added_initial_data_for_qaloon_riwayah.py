@@ -1,7 +1,7 @@
 """Added initial data for Qaloon riwayah
 
 Revision ID: 20ea33616146
-Revises: c90fa83110f4
+Revises: 815e860709a4
 Create Date: 2023-12-24 21:06:03.735294
 
 """
@@ -17,7 +17,7 @@ from quran_data.db_actions import fill_database_with_riwayah_data, delete_riwaya
 
 # revision identifiers, used by Alembic.
 revision: str = '20ea33616146'
-down_revision: Union[str, None] = 'c90fa83110f4'
+down_revision: Union[str, None] = '815e860709a4'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
