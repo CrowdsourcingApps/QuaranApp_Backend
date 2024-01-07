@@ -32,7 +32,7 @@ def get_shared_recordings(user_id: str, db: Session = Depends(get_db_session)):
 
 
 @recordings_router.get("/available/{user_id}", response_model=list[DetailedRecording])
-def get_shared_recordings(user_id: str, db: Session = Depends(get_db_session)):
+def get_available_recordings(user_id: str, db: Session = Depends(get_db_session)):
     user = user_service.UserService.instance().get_user_by_id(user_id)  # noqa
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
