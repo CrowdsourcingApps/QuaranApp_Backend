@@ -7,16 +7,31 @@ class Riwayah {
     Hafs
     Qaloon
 }
+class MushafPublisher {
+    <<enumeration>>
+    Madina
+}
 class AyahPart {
     Uuid: id
     Uuid: ayahId
     Int: partNumber = 0
+    String: text
 }
 class Ayah {
     Uuid: id
     Riwayah: riwayah
     Int: surahNumber
     Int: ayahInSurahNumber
+}
+class Mushaf {
+    Uuid: id
+    MushafPublisher: publisher
+    Riwayah: riwayah
+}
+class MushafContent {
+    Uuid: mushafId
+    Int: page
+    Uuid: ayahPart
 }
 class User {
     String: id
@@ -27,8 +42,8 @@ class User {
 class Recording {
     Uuid: id
     String: userId
-    Uuid: startId
-    Uuid: endId
+    AyahPart: start
+    AyahPart: end 
     String: audioUrl
     Date: createdAt
 }
@@ -37,8 +52,20 @@ class SharedRecording {
     Uuid: recordingId
     Date: createdAt
 }
+class AyahMarkers {
+    Uuid: ayahPartId
+    Int: orderId
+    Int: x
+    Int: y1
+    Int: y2
+}
 Recording *-- AyahPart: consist of
 User -- Recording: creates
 AyahPart --> Ayah
 Ayah --> Riwayah
+Mushaf --> Riwayah
+Mushaf --> MushafPublisher
 SharedRecording --> Recording
+AyahMarkers --> AyahPart
+MushafContent --> Mushaf
+MushafContent --> AyahPart
