@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 
 
-from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, user_service, tokens_service
+from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service, tokens_service
 from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording
 from .dependencies import get_db_session, transform_recording_data
 

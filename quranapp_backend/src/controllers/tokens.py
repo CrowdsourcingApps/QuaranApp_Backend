@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from src.services import tokens_service, UserService
+from src.services import tokens_service, users_service
 from .dependencies import get_db_session
 
 token_router = APIRouter(
@@ -11,8 +11,12 @@ token_router = APIRouter(
 
 
 @token_router.post("/generate")
-def generate_jwt_token(user_id: str, _: str = Depends(tokens_service.get_api_key)):
-    user = UserService.instance().get_user_by_id(user_id)
+def generate_jwt_token(
+        user_id: str,
+        db: Session = Depends(get_db_session),
+        _: str = Depends(tokens_service.get_api_key)
+):
+    user = users_service.get_user_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=401, detail='Invalid user data')
 
