@@ -1,1 +1,1 @@
-from src.services.user_service import UserService
+import src.services.users as users_service
