@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, UploadFile, HTTPException, status
 from sqlalchemy.orm import Session
 
 
-from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, user_service
+from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, user_service, tokens_service
 from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording
 from .dependencies import get_db_session, transform_recording_data
 
@@ -43,7 +43,8 @@ def get_available_recordings(user_id: str, db: Session = Depends(get_db_session)
 def upload_recording(
         audio_file: UploadFile,
         recording_data: Annotated[str, Depends(transform_recording_data)],
-        db: Session = Depends(get_db_session)
+        db: Session = Depends(get_db_session),
+        _: str = Depends(tokens_service.get_api_key)
 ):
     user = user_service.UserService.instance().get_user_by_id(recording_data.user_id)
     if not user:
@@ -68,12 +69,16 @@ def upload_recording(
 
 
 @recordings_router.delete("/{recording_id}")
-def delete_recording(recording_id):
+def delete_recording(recording_id, _: str = Depends(tokens_service.get_api_key)):
     pass
 
 
 @recordings_router.post("/{recording_id}/share", response_model=SharedRecording)
-def share_recording(share_data: RecordingShare, db: Session = Depends(get_db_session)):
+def share_recording(
+        share_data: RecordingShare,
+        db: Session = Depends(get_db_session),
+        _: str = Depends(tokens_service.get_api_key)
+):
     user = user_service.UserService.instance().get_user_by_alias(share_data.recipient_alias)
     if not user:
         raise HTTPException(detail="User not found by alias", status_code=status.HTTP_400_BAD_REQUEST)

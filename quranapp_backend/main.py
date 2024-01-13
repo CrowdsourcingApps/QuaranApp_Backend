@@ -1,11 +1,7 @@
-import sys
-import os
 import src.startup as startup
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from src.controllers import settings, users, recordings
-
-print(os.getcwd())
+from src.controllers import settings, users, recordings, tokens
 
 app = FastAPI()
 
@@ -19,6 +15,6 @@ async def validation_exception_handler(request, err):
 app.include_router(users)
 app.include_router(recordings)
 app.include_router(settings)
-
+app.include_router(tokens)
 
 startup.apply_migrations()
