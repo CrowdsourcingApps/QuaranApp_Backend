@@ -1,10 +1,10 @@
-import uuid
 from pydantic import BaseModel
 
 
 class TokenRequest(BaseModel):
-    app_id: uuid.UUID
-    app_key: str
+    user_id: str
 
 
-
+class BothTokensResponse(BaseModel):
+    access_token: str
+    refresh_token: str

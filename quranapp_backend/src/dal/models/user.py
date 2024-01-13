@@ -11,3 +11,4 @@ class User(Base):
     name = Column(String, nullable=False)
     surname = Column(String, nullable=False)
     recordings = relationship("Recording", back_populates="user")
+    tokens = relationship("Token", back_populates="user")
