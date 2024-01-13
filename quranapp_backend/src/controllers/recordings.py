@@ -44,7 +44,7 @@ def upload_recording(
         audio_file: UploadFile,
         recording_data: Annotated[str, Depends(transform_recording_data)],
         db: Session = Depends(get_db_session),
-        _: str = Depends(tokens_service.get_api_key)
+        _: str = Depends(tokens_service.verify_api_key)
 ):
     user = users_service.get_user_by_id(db, recording_data.user_id)
     if not user:
@@ -69,7 +69,7 @@ def upload_recording(
 
 
 @recordings_router.delete("/{recording_id}")
-def delete_recording(recording_id, _: str = Depends(tokens_service.get_api_key)):
+def delete_recording(recording_id, _: str = Depends(tokens_service.verify_api_key)):
     pass
 
 
@@ -77,7 +77,7 @@ def delete_recording(recording_id, _: str = Depends(tokens_service.get_api_key))
 def share_recording(
         share_data: RecordingShare,
         db: Session = Depends(get_db_session),
-        _: str = Depends(tokens_service.get_api_key)
+        _: str = Depends(tokens_service.verify_api_key)
 ):
     user = users_service.get_user_by_alias(db, share_data.recipient_alias)
     if not user:

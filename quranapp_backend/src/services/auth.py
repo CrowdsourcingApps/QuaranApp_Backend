@@ -1,32 +1,61 @@
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Depends, status
-from fastapi.security import APIKeyHeader
-from sqlalchemy.orm import Session
-from src.config import MOBILE_APP_KEY, APP_PUBLIC_KEY, APP_PRIVATE_KEY, JWT_ALG
-from src.dal.models import Token
-from src.models import BothTokensResponse
 
 import jwt
+from fastapi import HTTPException, Depends, status
+from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
+from src.config import MOBILE_APP_KEY, APP_PUBLIC_KEY, APP_PRIVATE_KEY, JWT_ALG
+from src.controllers.dependencies import get_db_session
+from src.dal.models import Token
 
-API_KEY = APIKeyHeader(name="X-API-Key")
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
+ACCESS_JWT_BEARER = HTTPBearer()
+ACCESS_TOKEN_EXPIRE_MINUTES = 1
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 
-async def get_api_key(api_key: str = Depends(API_KEY)):
+async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)):
     if api_key != MOBILE_APP_KEY:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access is forbidden",
         )
-    return api_key
+    return True
 
 
-def generate_both_tokens(db: Session, user_id: str) -> BothTokensResponse:
+async def verify_access_token(
+        credentials: HTTPAuthorizationCredentials = Depends(ACCESS_JWT_BEARER),
+        db: Session = Depends(get_db_session)
+):
+    try:
+        return is_token_correct(db=db, token=credentials.credentials)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+
+def is_token_correct(db: Session, token: str) -> bool:
+    user_id = get_user_id_from_jwt(token)
+    db_token = get_token(db, user_id)
+
+    if (db_token is None) or (db_token.access_token != token):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+    return True
+
+
+def get_user_id_from_jwt(token: str):
+    payload = jwt.decode(token, APP_PUBLIC_KEY, algorithms=JWT_ALG)
+    print(payload)
+    return payload.get("user_id")
+
+
+def generate_both_tokens(db: Session, user_id: str) -> (str, str):
     access_token, access_expire = create_access_token(user_id)
     refresh_token, refresh_expire = create_refresh_token(user_id)
-    db_token = get_tokens(db, user_id)
+    db_token = get_token(db, user_id)
 
     if db_token is None:
         db_token = Token(user_id=user_id, access_token=access_token, refresh_token=refresh_token,
@@ -40,26 +69,45 @@ def generate_both_tokens(db: Session, user_id: str) -> BothTokensResponse:
 
     db.commit()
     db.refresh(db_token)
-    return BothTokensResponse(access_token=access_token, refresh_token=refresh_token)
+    return access_token, refresh_token
 
 
 def create_access_token(user_id: str) -> (str, datetime):
     expires_delta = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     expire = datetime.utcnow() + expires_delta
-    expire_str = str(expire)
 
-    token = jwt.encode({"user_id": user_id, "expire": expire_str}, APP_PRIVATE_KEY, algorithm=JWT_ALG)
+    token = jwt.encode({"user_id": user_id, "exp": expire}, APP_PRIVATE_KEY, algorithm=JWT_ALG)
     return token, expire
+
+
+def refresh_access_token(db: Session, token: str) -> str:
+    try:
+        user_id = get_user_id_from_jwt(token)
+        db_token = get_token(db, user_id)
+
+        if (db_token is None) or (db_token.refresh_token != token):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
+
+        access_token, access_expire = create_access_token(user_id)
+        db_token.access_token = access_token
+        db_token.access_token_expires = access_expire
+
+        db.commit()
+        db.refresh(db_token)
+        return access_token
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
 
 
 def create_refresh_token(user_id: str) -> (str, datetime):
     expires_delta = timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     expire = datetime.utcnow() + expires_delta
-    expire_str = str(expire)
 
-    token = jwt.encode({"user_id": user_id, "expire": expire_str}, APP_PRIVATE_KEY, algorithm=JWT_ALG)
+    token = jwt.encode({"user_id": user_id, "exp": expire}, APP_PRIVATE_KEY, algorithm=JWT_ALG)
     return token, expire
 
 
-def get_tokens(db: Session, user_id: str) -> Token | None:
+def get_token(db: Session, user_id: str) -> Token | None:
     return db.query(Token).filter_by(user_id=user_id).first()

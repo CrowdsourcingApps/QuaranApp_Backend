@@ -11,7 +11,7 @@ user_router = APIRouter(
 
 
 @user_router.get("/{user_id}", response_model=UserModel)
-def get_user(user_id: str, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.get_api_key)) -> UserModel:
+def get_user(user_id: str, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.verify_api_key)) -> UserModel:
     user = users_service.get_user_by_id(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail='User not found by ID')
@@ -20,7 +20,7 @@ def get_user(user_id: str, db: Session = Depends(get_db_session), _: str = Depen
 
 
 @user_router.get("/find/{user_alias}", response_model=UserModel)
-def find_user(user_alias: str, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.get_api_key)) -> UserModel:
+def find_user(user_alias: str, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.verify_api_key)) -> UserModel:
     user = users_service.get_user_by_alias(db, user_alias)
     if user is None:
         raise HTTPException(status_code=404, detail='User not found by Alias')
@@ -29,10 +29,18 @@ def find_user(user_alias: str, db: Session = Depends(get_db_session), _: str = D
 
 
 @user_router.get("/is-alias-available/{user_alias}")
-def check_if_alias_exists(user_alias: str, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.get_api_key)) -> bool:
+def check_if_alias_exists(
+        user_alias: str,
+        db: Session = Depends(get_db_session),
+        _: str = Depends(tokens_service.verify_api_key)
+) -> bool:
     return users_service.check_if_alias_exists(db, user_alias)
 
 
 @user_router.post("/create")
-def create_user(user: UserModel, db: Session = Depends(get_db_session), _: str = Depends(tokens_service.get_api_key)) -> object:
+def create_user(
+        user: UserModel,
+        db: Session = Depends(get_db_session),
+        _: str = Depends(tokens_service.verify_api_key)
+) -> object:
     return users_service.create_user(db, user)
