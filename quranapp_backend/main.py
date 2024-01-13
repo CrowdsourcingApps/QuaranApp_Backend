@@ -1,11 +1,8 @@
-import sys
-import os
 import src.startup as startup
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from src.controllers import settings, users, recordings
 
-print(os.getcwd())
 
 app = FastAPI()
 
