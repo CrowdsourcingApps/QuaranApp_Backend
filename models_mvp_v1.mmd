@@ -27,15 +27,15 @@ class User {
 class Recording {
     Uuid: id
     String: userId
-    AyahPart: start
-    AyahPart: end 
+    Uuid: startId
+    Uuid: endId
     String: audioUrl
-    Date: date
+    Date: createdAt
 }
 class SharedRecording {
     Uuid: recipientId
     Uuid: recordingId
-    Date: date
+    Date: createdAt
 }
 Recording *-- AyahPart: consist of
 User -- Recording: creates
