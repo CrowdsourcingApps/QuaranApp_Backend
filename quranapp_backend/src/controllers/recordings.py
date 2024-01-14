@@ -79,15 +79,19 @@ def upload_recording(
 
 
 @recordings_router.delete("/{recording_id}")
-def delete_recording(recording_id):
+def delete_recording(recording_id, user_id: str = jwt_dependency):
+    # Add code to - Check if audio does not belong to user
     pass
 
 
 @recordings_router.post("/{recording_id}/share", response_model=SharedRecording)
 def share_recording(
         share_data: RecordingShare,
+        user_id: str = jwt_dependency,
         db: Session = db_session_dependency
 ):
+    # Add code to - Check if audio does not belong to user
+
     user = users_service.get_user_by_alias(db, share_data.recipient_alias)
     if not user:
         raise HTTPException(detail="User not found by alias", status_code=status.HTTP_400_BAD_REQUEST)
