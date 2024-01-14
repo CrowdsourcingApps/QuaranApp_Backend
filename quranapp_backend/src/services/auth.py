@@ -6,7 +6,7 @@ from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredenti
 from sqlalchemy.orm import Session
 
 from src.config import MOBILE_APP_KEY, APP_PUBLIC_KEY, APP_PRIVATE_KEY, JWT_ALG
-from src.controllers.dependencies import get_db_session
+from src.dal.database import get_session
 from src.dal.models import Token
 
 API_KEY_HEADER = APIKeyHeader(name="X-API-Key")
@@ -26,7 +26,7 @@ async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)):
 
 async def verify_access_token(
         credentials: HTTPAuthorizationCredentials = Depends(ACCESS_JWT_BEARER),
-        db: Session = Depends(get_db_session)
+        db: Session = Depends(get_session)
 ):
     try:
         return is_token_correct(db=db, token=credentials.credentials)
@@ -36,14 +36,14 @@ async def verify_access_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 
-def is_token_correct(db: Session, token: str) -> bool:
+def is_token_correct(db: Session, token: str) -> str:
     user_id = get_user_id_from_jwt(token)
     db_token = get_token(db, user_id)
 
     if (db_token is None) or (db_token.access_token != token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    return True
+    return user_id
 
 
 def get_user_id_from_jwt(token: str):

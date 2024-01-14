@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, Request
+from fastapi import APIRouter, HTTPException, Response, Request
 from sqlalchemy.orm import Session
 
+from src.controllers.dependencies import db_session_dependency, jwt_dependency, api_key_dependency
 from src.models import TokenRequest, TokensResponse
 from src.services import tokens_service, users_service
-from .dependencies import get_db_session
 
 token_router = APIRouter(
     prefix="/token",
-    tags=["token"]
+    tags=["token"],
+    dependencies=[api_key_dependency]
 )
 
 
@@ -15,8 +16,7 @@ token_router = APIRouter(
 def generate_jwt_token(
         request: TokenRequest,
         response: Response,
-        db: Session = Depends(get_db_session),
-        _: str = Depends(tokens_service.verify_api_key)
+        db: Session = db_session_dependency
 ):
     user = users_service.get_user_by_id(db, request.user_id)
     if user is None:
@@ -28,19 +28,9 @@ def generate_jwt_token(
 
 
 @token_router.get("/refresh")
-def get_cookie(request: Request, db: Session = Depends(get_db_session),):
+def get_cookie(request: Request, db: Session = db_session_dependency):
     refresh_token = request.cookies.get("refresh_token")
     if not refresh_token:
         raise HTTPException(status_code=401, detail='Invalid user data')
 
     return tokens_service.refresh_access_token(db=db, token=refresh_token)
-
-
-@token_router.get("/check-jwt-access")
-def protected_route(is_correct: bool = Depends(tokens_service.verify_access_token)):
-    return is_correct
-
-
-@token_router.get("/check-api-key")
-def check_access(is_correct: bool = Depends(tokens_service.verify_api_key)):
-    return is_correct
