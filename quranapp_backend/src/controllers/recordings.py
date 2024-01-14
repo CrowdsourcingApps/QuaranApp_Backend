@@ -1,11 +1,11 @@
 import uuid
-from typing import Annotated
 
-from fastapi import APIRouter, Depends, UploadFile, HTTPException, status
+from fastapi import APIRouter, UploadFile, HTTPException, status, File, Form
 from sqlalchemy.orm import Session
 
-from src.controllers.dependencies import db_session_dependency, transform_recording_data, api_key_dependency, \
-    jwt_dependency
+import src.mappers as mapper
+from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
+from src.dal.enums import RiwayahEnum
 from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording
 from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service
 
@@ -42,11 +42,21 @@ def get_available_recordings(user_id: str = jwt_dependency, db: Session = db_ses
 
 @recordings_router.post("/upload", response_model=Recording)
 def upload_recording(
-        audio_file: UploadFile,
-        recording_data: Annotated[str, Depends(transform_recording_data)],
+        start_surah_number: int = Form(),
+        start_ayah_in_surah_number: int = Form(),
+        start_part_number: int = Form(0),
+        end_surah_number: int = Form(),
+        end_ayah_in_surah_number: int = Form(),
+        end_part_number: int = Form(0),
+        riwayah: RiwayahEnum = Form(),
+        audio_file: UploadFile = File(),
+        user_id: str = jwt_dependency,
         db: Session = db_session_dependency
 ):
-    user = users_service.get_user_by_id(db, recording_data.user_id)
+    recording_data = mapper.recording.map_create_request_to_model(start_surah_number, start_ayah_in_surah_number,
+                                                                  start_part_number, end_surah_number,
+                                                                  end_ayah_in_surah_number, end_part_number, riwayah)
+    user = users_service.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
 
@@ -65,7 +75,7 @@ def upload_recording(
 
     audio_url = azure_blob_storage.upload_file(filename=f"audio_{uuid.uuid4()}.mp3", file=audio_file.file)
 
-    return recordings_service.create_recording(db=db, user_id=user.id, start=start, end=end, audio_url=audio_url)
+    return recordings_service.create_recording(db=db, user_id=user_id, start=start, end=end, audio_url=audio_url)
 
 
 @recordings_router.delete("/{recording_id}")
