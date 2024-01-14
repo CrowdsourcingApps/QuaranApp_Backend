@@ -1,8 +1,7 @@
-import src.mappers as mapper
-
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+import src.mappers as mapper
 from src.dal.models import User
 from src.models import UserModel
 

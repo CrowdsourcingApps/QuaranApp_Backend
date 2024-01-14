@@ -1,6 +1,8 @@
 import uuid
+
 from sqlalchemy import Column, String
 from sqlalchemy.orm import relationship
+
 from src.dal.database import Base
 
 

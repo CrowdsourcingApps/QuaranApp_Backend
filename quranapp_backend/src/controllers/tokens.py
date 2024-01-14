@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Response, Request
 from sqlalchemy.orm import Session
 
-from src.controllers.dependencies import db_session_dependency, jwt_dependency, api_key_dependency
+from src.controllers.dependencies import db_session_dependency, api_key_dependency
 from src.models import TokenRequest, TokensResponse
 from src.services import tokens_service, users_service
 

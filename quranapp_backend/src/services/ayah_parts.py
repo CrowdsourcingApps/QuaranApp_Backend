@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 
-from src.dal.models import AyahPart
 from src.dal.enums import RiwayahEnum
+from src.dal.models import AyahPart
 from src.models import AyahPartSearch
 
 
@@ -12,4 +12,3 @@ def get_ayah_part(db: Session, ayah_part_search_info: AyahPartSearch, riwayah: R
         AyahPart.ayah.has(riwayah=riwayah),
         AyahPart.part_number == ayah_part_search_info.part_number
     ).first()
-

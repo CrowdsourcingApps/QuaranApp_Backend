@@ -1,8 +1,8 @@
 from fastapi import APIRouter
+from sqlalchemy import text
 
 from src.controllers.dependencies import jwt_dependency, api_key_dependency
 from src.dal.database import SessionLocal
-from sqlalchemy import text
 
 settings_router = APIRouter(
     prefix="/settings",

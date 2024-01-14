@@ -15,7 +15,7 @@ class RecordingCreate(BaseModel):
 
 class Recording(BaseModel):
     id: uuid.UUID
-    #todo user:
+    # todo user:
     start: AyahPart
     end: AyahPart
     audio_url: str
