@@ -1,0 +1,89 @@
+---
+title: Quaranize Models
+---
+classDiagram
+class Riwayah {
+    <<enumeration>>
+    Hafs
+    Qaloon
+}
+class MushafPublisher {
+    <<enumeration>>
+    Madina
+}
+class AyahPart {
+    Uuid: id
+    Uuid: ayahId
+    Uuid: mushafPageId
+    Int: partNumber = 0
+    String: text
+}
+class Ayah {
+    Uuid: id
+    Uuid: mushafId
+    Int: surahNumber
+    Int: ayahInSurahNumber
+}
+class Mushaf {
+    Uuid: id
+    MushafPublisher: publisher
+    Riwayah: riwayah
+}
+class MushafPage {
+    Uuid: id
+    Int: index
+    Uuid: mushafId
+    String: lightModeLink
+    String: darkModeLink
+}
+class User {
+    String: id
+    String: alias
+    String: name
+    String: surname
+}
+class Recording {
+    Uuid: id
+    String: userId
+    AyahPart: start
+    AyahPart: end 
+    String: audioUrl
+    Date: createdAt
+}
+class SharedRecording {
+    Uuid: recipientId
+    Uuid: recordingId
+    Date: createdAt
+}
+class AyahMarkers {
+    Uuid: ayahPartId
+    Int: orderId
+    Int: x
+    Int: y1
+    Int: y2
+    Bool: isNewLine
+}
+class SurahInMushaf {
+    Uuid: mushafId
+    Uuid: firstPageInMushafId
+    Int: surahNumber
+}
+class Surah {
+    Int: number
+    String: title
+    String: description
+    String: translate
+}
+Recording *-- AyahPart: consist of
+User -- Recording: creates
+AyahPart --> Ayah
+AyahPart --> MushafPage
+Ayah --> Mushaf
+Mushaf --> Riwayah
+Mushaf --> MushafPublisher
+SharedRecording --> Recording
+AyahMarkers --> AyahPart
+MushafPage --> Mushaf
+SurahInMushaf --> MushafPage
+SurahInMushaf --> Surah
+SurahInMushaf --> Mushaf
