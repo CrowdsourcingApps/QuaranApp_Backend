@@ -13,9 +13,11 @@ class MushafPublisher {
 }
 class AyahPart {
     Uuid: id
+    Uuid: mushafId
     Uuid: ayahId
     Int: partNumber = 0
     String: text
+    Int: page
 }
 class Ayah {
     Uuid: id
@@ -27,11 +29,6 @@ class Mushaf {
     Uuid: id
     MushafPublisher: publisher
     Riwayah: riwayah
-}
-class MushafContent {
-    Uuid: mushafId
-    Int: page
-    Uuid: ayahPart
 }
 class User {
     String: id
@@ -58,14 +55,14 @@ class AyahMarkers {
     Int: x
     Int: y1
     Int: y2
+    Bool: isNewLine
 }
 Recording *-- AyahPart: consist of
 User -- Recording: creates
 AyahPart --> Ayah
+AyahPart --> Mushaf
 Ayah --> Riwayah
 Mushaf --> Riwayah
 Mushaf --> MushafPublisher
 SharedRecording --> Recording
 AyahMarkers --> AyahPart
-MushafContent --> Mushaf
-MushafContent --> AyahPart
