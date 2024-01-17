@@ -15,7 +15,7 @@ def fill_database_with_riwayah_data(session, file_name):
         for riwayah, data in initial_data.items():
             for surah_number, ayah_count in data.items():
                 ayah_data = list()
-                for ayah_in_surah_number in range(1, ayah_count+1):
+                for ayah_in_surah_number in range(ayah_count):
                     ayah_data.append({
                         "riwayah": riwayah,
                          "surah_number": surah_number,
