@@ -24,26 +24,27 @@ async def verify_api_key(api_key: str = Depends(API_KEY_HEADER)):
     return True
 
 
-async def verify_access_token(
+async def get_user_from_token(
         credentials: HTTPAuthorizationCredentials = Depends(ACCESS_JWT_BEARER),
         db: Session = Depends(get_session)
 ):
     try:
-        return is_token_correct(db=db, token=credentials.credentials)
+        user_id = get_user_id_from_jwt(token=credentials.credentials)
+        check_is_token_correct(db=db, token=credentials.credentials, user_id=user_id)
+        return user_id
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
 
-def is_token_correct(db: Session, token: str) -> str:
-    user_id = get_user_id_from_jwt(token)
+def check_is_token_correct(db: Session, token: str, user_id: str) -> bool:
     db_token = get_token(db, user_id)
 
     if (db_token is None) or (db_token.access_token != token):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-    return user_id
+    return True
 
 
 def get_user_id_from_jwt(token: str):
