@@ -1,8 +1,8 @@
 """added jwt tokens table
 
-Revision ID: 11c160d1b7ec
+Revision ID: 8b106a92ec04
 Revises: 20ea33616146
-Create Date: 2024-01-13 21:53:04.497714
+Create Date: 2024-01-17 20:32:05.726183
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '11c160d1b7ec'
+revision: str = '8b106a92ec04'
 down_revision: Union[str, None] = '20ea33616146'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -24,8 +24,6 @@ def upgrade() -> None:
     sa.Column('user_id', sa.String(), nullable=False),
     sa.Column('access_token', sa.String(), nullable=False),
     sa.Column('refresh_token', sa.String(), nullable=False),
-    sa.Column('access_token_expires', sa.DateTime(), nullable=False),
-    sa.Column('refresh_token_expires', sa.DateTime(), nullable=False),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('user_id')
     )
