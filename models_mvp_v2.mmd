@@ -1,5 +1,5 @@
 ---
-title: Quaranize Models
+title: Quarapp Models
 ---
 classDiagram
 class Riwayah {
@@ -11,24 +11,24 @@ class MushafPublisher {
     <<enumeration>>
     Madina
 }
-class AyahPart {
-    Uuid: id
-    Uuid: ayahId
-    Uuid: mushafPageId
-    Int: partNumber = 0
-    String: text
-}
-class Ayah {
-    Uuid: id
-    Uuid: mushafId
-    Int: surahNumber
-    Int: ayahInSurahNumber
+class User {
+    String: id
+    String: alias
+    String: name
+    String: surname
 }
 class Mushaf {
     Uuid: id
     MushafPublisher: publisher
     Riwayah: riwayah
 }
+class Surah {
+    Int: number
+    String: title
+    String: description
+    String: translate
+}
+
 class MushafPage {
     Uuid: id
     Int: index
@@ -36,11 +36,22 @@ class MushafPage {
     String: lightModeLink
     String: darkModeLink
 }
-class User {
-    String: id
-    String: alias
-    String: name
-    String: surname
+class Ayah {
+    Uuid: id
+    Uuid: mushafId
+    Int: surahNumber
+    Int: ayahInSurahNumber
+}
+class AyahPart {
+    Uuid: id
+    Uuid: ayahId
+    Uuid: mushafPageId
+    Int: partNumber = 0
+    String: text
+}
+class SurahInMushaf {
+    Uuid: firstPageInMushafId
+    Int: surahNumber
 }
 class Recording {
     Uuid: id
@@ -63,17 +74,6 @@ class AyahMarkers {
     Int: y2
     Bool: isNewLine
 }
-class SurahInMushaf {
-    Uuid: mushafId
-    Uuid: firstPageInMushafId
-    Int: surahNumber
-}
-class Surah {
-    Int: number
-    String: title
-    String: description
-    String: translate
-}
 Recording *-- AyahPart: consist of
 User -- Recording: creates
 AyahPart --> Ayah
@@ -86,4 +86,3 @@ AyahMarkers --> AyahPart
 MushafPage --> Mushaf
 SurahInMushaf --> MushafPage
 SurahInMushaf --> Surah
-SurahInMushaf --> Mushaf

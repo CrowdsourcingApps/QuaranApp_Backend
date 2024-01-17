@@ -1,0 +1,76 @@
+---
+title Quarapp DB ER Diagram
+---
+erDiagram
+%% Riwayah {
+%%     <<enumeration>>
+%%     Hafs
+%%     Qaloon
+%% }
+%% MushafPublisher {
+%%     <<enumeration>>
+%%     Madina
+%% }
+AyahPart {
+    Uuid id
+    Uuid ayahId
+    Uuid mushafPageId
+    Int partNumber
+    String text
+}
+Ayah {
+    Uuid id
+    Uuid mushafId
+    Int surahNumber
+    Int ayahInSurahNumber
+}
+Mushaf {
+    Uuid id
+    MushafPublisher publisher
+    Riwayah riwayah
+}
+MushafPage {
+    Uuid id
+    Int index
+    Uuid mushafId
+    String lightModeLink
+    String darkModeLink
+}
+User {
+    String id
+    String alias
+    String name
+    String surname
+}
+Recording {
+    Uuid id
+    String userId
+    AyahPart start
+    AyahPart end 
+    String audioUrl
+    Date createdAt
+}
+SharedRecording {
+    Uuid recipientId
+    Uuid recordingId
+    Date createdAt
+}
+AyahMarkers {
+    Uuid ayahPartId
+    Int orderId
+    Int x
+    Int y1
+    Int y2
+    Bool isNewLine
+}
+SurahInMushaf {
+    Uuid mushafId
+    Uuid firstPageInMushafId
+    Int surahNumber
+}
+Surah {
+    Int number
+    String title
+    String description
+    String translate
+}
