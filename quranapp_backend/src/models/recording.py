@@ -37,6 +37,7 @@ class SharedRecording(BaseModel):
 
 
 class DetailedRecording(BaseModel):
+    id: uuid.UUID
     user_alias: str
     riwayah: RiwayahEnum
     start: AyahPartDetailed
