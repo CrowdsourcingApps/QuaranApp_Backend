@@ -51,7 +51,6 @@ class AyahPart {
 }
 class SurahInMushaf {
     Uuid: firstPageInMushafId
-    Uuid: mushafId
     Int: surahNumber
 }
 class Recording {
@@ -87,4 +86,3 @@ AyahMarkers --> AyahPart
 MushafPage --> Mushaf
 SurahInMushaf --> MushafPage
 SurahInMushaf --> Surah
-SurahInMushaf --> Mushaf
