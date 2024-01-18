@@ -1,5 +1,7 @@
 import uuid
+
 from sqlalchemy.orm import Session
+
 from src.dal.models import Recording, AyahPart, SharedRecording
 from src.models import DetailedRecording, AyahPartDetailed
 
@@ -20,6 +22,7 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
         end = recording.end
 
         result.append(DetailedRecording(
+            id=recording.id,
             user_alias=recording.user.alias,
             riwayah=start.ayah.riwayah,
             start=AyahPartDetailed(
@@ -44,6 +47,7 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
         end = shared.recording.end
 
         result.append(DetailedRecording(
+            id=shared.recording.id,
             user_alias=shared.recipient.alias,
             riwayah=start.ayah.riwayah,
             start=AyahPartDetailed(

@@ -10,13 +10,12 @@ from src.models.ayah_part import AyahPartDetailed, AyahPart, AyahPartSearch
 class RecordingCreate(BaseModel):
     start: AyahPartSearch
     end: AyahPartSearch
-    user_id: str  # возможно, пользователь будет передаваться как-то по-другому
     riwayah: RiwayahEnum
 
 
 class Recording(BaseModel):
     id: uuid.UUID
-    #todo user:
+    # todo user:
     start: AyahPart
     end: AyahPart
     audio_url: str
@@ -37,6 +36,7 @@ class SharedRecording(BaseModel):
 
 
 class DetailedRecording(BaseModel):
+    id: uuid.UUID
     user_alias: str
     riwayah: RiwayahEnum
     start: AyahPartDetailed
