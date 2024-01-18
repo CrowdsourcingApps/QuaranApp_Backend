@@ -33,4 +33,3 @@ jobs:
           HD_MOBILE_APP_KEY: ${{secrets.MOBILE_APP_KEY}}
           HD_APP_PRIVATE_KEY: ${{secrets.APP_PRIVATE_KEY}}
           HD_APP_PUBLIC_KEY: ${{secrets.APP_PUBLIC_KEY}}
-          HD_JWT_ALG: ${{env.JWT_ALG}}
