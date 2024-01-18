@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
+import src.mappers as mapper
 from src.dal.models import User
-from src.mappers import user_mapper
 from src.models import UserModel
 
 
@@ -31,7 +31,7 @@ def create_user(db: Session, user: UserModel) -> object:
     if get_user_by_id(db, user.id) is not None:
         raise HTTPException(status_code=409, detail=f'ID already in use.')
 
-    user_dal = user_mapper.map_to_dal(user)
+    user_dal = mapper.user.map_to_dal(user)
     db.add(user_dal)
     db.commit()
     return {'message': 'User added successfully'}

@@ -3,6 +3,7 @@
 """
 
 import os
+
 from azure.storage.blob import BlobServiceClient
 
 connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
