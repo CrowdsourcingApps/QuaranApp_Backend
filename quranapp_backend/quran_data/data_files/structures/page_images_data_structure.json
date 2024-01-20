@@ -1,0 +1,17 @@
+{
+  "riwayah": "Qaloon",
+  "publisher": "Madina",
+  "pages": [
+    {
+      "page_number": 1,
+      "light_mode_link": "http://...",
+      "dark_mode_link": "http://..."
+    },
+    {
+      "page_number": 2,
+      "light_mode_link": "http://...",
+      "dark_mode_link": "http://..."
+    },
+    ...
+  ]
+}
