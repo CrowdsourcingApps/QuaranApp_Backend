@@ -26,9 +26,8 @@ class Surah {
     Int: number
     String: title
     String: description
-    String: translate
+    String: translationEng
 }
-
 class MushafPage {
     Uuid: id
     Int: index
@@ -47,7 +46,7 @@ class AyahPart {
     Uuid: ayahId
     Uuid: mushafPageId
     Int: partNumber = 0
-    String: text
+    Uuid: ayahPartTextId
 }
 class SurahInMushaf {
     Uuid: firstPageInMushafId
@@ -74,10 +73,25 @@ class AyahMarkers {
     Int: y2
     Bool: isNewLine
 }
+class Reciter {
+    Uuid: id
+    String: name
+    Riwayah: riwayah
+}
+class ReciterAudio {
+    Uuid: reciterId
+    String: audioLink
+    Uuid: ayahPartTextId
+}
+class AyahPartText {
+    Uuid: id
+    String: text
+}
 Recording *-- AyahPart: consist of
 User -- Recording: creates
 AyahPart --> Ayah
 AyahPart --> MushafPage
+AyahPart --> AyahPartText
 Ayah --> Mushaf
 Mushaf --> Riwayah
 Mushaf --> MushafPublisher
@@ -86,3 +100,7 @@ AyahMarkers --> AyahPart
 MushafPage --> Mushaf
 SurahInMushaf --> MushafPage
 SurahInMushaf --> Surah
+Reciter --> Riwayah
+ReciterAudio --> Reciter
+ReciterAudio --> AyahPartText
+Ayah --> Surah
