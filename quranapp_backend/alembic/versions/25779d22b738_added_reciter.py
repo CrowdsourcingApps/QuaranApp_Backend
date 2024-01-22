@@ -23,10 +23,13 @@ def upgrade() -> None:
     op.create_table('reciters',
     sa.Column('id', sa.UUID(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
-    sa.Column('riwayah', sa.Enum('HAFS', 'QALOON', name='riwayahenum'), nullable=False),
+    # sa.Column('riwayah', sa.Enum('HAFS', 'QALOON', name='riwayahenum'), nullable=False), - tries to recreate enum
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
+    sa_enum = sa.Enum('HAFS', 'QALOON', name='riwayahenum')
+    sa_enum.create(op.get_bind(), checkfirst=True)
+    op.add_column("reciters", sa.Column("riwayah", sa_enum, nullable=False))
 
 
 def downgrade() -> None:
