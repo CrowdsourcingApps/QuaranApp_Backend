@@ -10,7 +10,7 @@ APP_PUBLIC_KEY = b"key" if os.environ.get('APP_PUBLIC_KEY') is None else bytes(
     os.environ.get('APP_PUBLIC_KEY').replace('\\n', '\n'), 'UTF-8')
 APP_PRIVATE_KEY = b"key" if os.environ.get('APP_PRIVATE_KEY') is None else bytes(
     os.environ.get('APP_PRIVATE_KEY').replace('\\n', '\n'), 'UTF-8')
-JWT_ALG = "RS512" if os.environ.get('JWT_ALG') is None else os.environ.get('JWT_ALG')
+JWT_ALG = "RS512"
 
 db_url = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST_NAME}/{DB_NAME}?sslmode={DB_SSL}'
 
