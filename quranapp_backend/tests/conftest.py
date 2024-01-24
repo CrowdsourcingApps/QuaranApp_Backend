@@ -9,12 +9,12 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 Base = declarative_base()
-SQLALCHEMY_DATABASE_URL = 'postgresql://myuser:mypassword@localhost/mydatabase?sslmode=disable'
 
 
 @pytest.fixture(scope="session")
 def test_db_url():
-    return SQLALCHEMY_DATABASE_URL
+    from src.config import db_url
+    return db_url
 
 
 @pytest.fixture(scope="session")
