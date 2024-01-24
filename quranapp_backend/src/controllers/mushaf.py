@@ -24,7 +24,7 @@ def get_page(id: uuid.UUID):
     pass
 
 
-@mushaf_router.get("/surahs")
+@mushaf_router.get("/surahs/{riwayah}/{publisher}")
 def get_surahs(riwayah: RiwayahEnum, publisher: str):
     # RETURN
     # Sorted by surah number List of (Surah, pageIndex)
