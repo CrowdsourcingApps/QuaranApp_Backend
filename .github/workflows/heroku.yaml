@@ -1,0 +1,35 @@
+name: Heroku Deploy
+
+on:
+  push:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Deploy Heroku
+        uses: akhileshns/heroku-deploy@master
+        with:
+          heroku_api_key: ${{secrets.HEROKU_API_KEY}}
+          heroku_app_name: "quranapp"
+          heroku_email: "nursultan@outlook.com"
+          usedocker: true
+          stack: "container"
+          branch: "develop"
+        env:
+          HD_POSTGRES_USER: ${{secrets.POSTGRES_USER}}
+          HD_POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD}}
+          HD_DB_HOST: ${{secrets.DB_HOST}}
+          HD_POSTGRES_DB: ${{secrets.POSTGRES_DB}}
+          HD_DB_SSL: ${{env.DB_SSL}}
+          HD_AZURE_STORAGE_CONNECTION_STRING: ${{secrets.AZURE_STORAGE_CONNECTION_STRING}}
+          HD_MOBILE_APP_KEY: ${{secrets.MOBILE_APP_KEY}}
+          HD_APP_PRIVATE_KEY: ${{secrets.APP_PRIVATE_KEY}}
+          HD_APP_PUBLIC_KEY: ${{secrets.APP_PUBLIC_KEY}}
