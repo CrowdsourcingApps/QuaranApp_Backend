@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 import src.mappers as mapper
 from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
 from src.dal.enums import RiwayahEnum
-from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording
+from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording, ApiMessageResponse
 from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service
 
 recordings_router = APIRouter(
@@ -78,10 +78,11 @@ def upload_recording(
     return recordings_service.create_recording(db=db, user_id=user_id, start=start, end=end, audio_url=audio_url)
 
 
-@recordings_router.delete("/{recording_id}")
-def delete_recording(recording_id, user_id: str = jwt_dependency):
-    # Add code to - Check if audio does not belong to user
-    pass
+@recordings_router.delete("/{recording_id}", response_model=ApiMessageResponse)
+def delete_recording(recording_id: uuid.UUID, user_id: str = jwt_dependency, db: Session = db_session_dependency):
+    recordings_service.check_recording_owner(db=db, user_id=user_id, recording_id=recording_id)
+    recordings_service.delete_recording(db=db, recording_id=recording_id)
+    return ApiMessageResponse(message='Recording deleted successfully', is_success=True)
 
 
 @recordings_router.post("/{recording_id}/share", response_model=SharedRecording)
@@ -90,16 +91,13 @@ def share_recording(
         user_id: str = jwt_dependency,
         db: Session = db_session_dependency
 ):
-    # Add code to - Check if audio does not belong to user
-
+    recordings_service.check_recording_owner(db=db, user_id=user_id, recording_id=share_data.recording_id)
     user = users_service.get_user_by_alias(db, share_data.recipient_alias)
     if not user:
         raise HTTPException(detail="User not found by alias", status_code=status.HTTP_400_BAD_REQUEST)
 
     recording = recordings_service.get_recording_by_id(db=db, recording_id=share_data.recording_id)
-    if not recording:
-        raise HTTPException(detail="Recording not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
-    elif recording.user_id == user.id:
+    if recording.user_id == user.id:
         raise HTTPException(detail="Impossible to share recording with yourself",
                             status_code=status.HTTP_400_BAD_REQUEST)
 
