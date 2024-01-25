@@ -73,7 +73,7 @@ def upload_recording(
             message = "End ayah was not found."
         raise HTTPException(detail=message, status_code=status.HTTP_400_BAD_REQUEST)
 
-    audio_url = azure_blob_storage.upload_file(filename=f"audio_{uuid.uuid4()}.mp3", file=audio_file.file)
+    audio_url = azure_blob_storage.upload_file(filename=audio_file.filename, file=audio_file.file)
 
     return recordings_service.create_recording(db=db, user_id=user_id, start=start, end=end, audio_url=audio_url)
 
