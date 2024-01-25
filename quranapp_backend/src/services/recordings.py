@@ -48,7 +48,7 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
 
         result.append(DetailedRecording(
             id=shared.recording.id,
-            user_alias=shared.recipient.alias,
+            user_alias=shared.recording.user.alias,
             riwayah=start.ayah.riwayah,
             start=AyahPartDetailed(
                 surah_number=start.ayah.surah_number,
