@@ -7,7 +7,7 @@ from src.models import UserModel, ApiMessageResponse
 
 
 def get_user_by_id(db: Session, user_id: str) -> UserModel | None:
-    user = db.query(User).get(user_id)
+    user = db.get(User, user_id)
     if user is not None:
         db.expunge(user)
     return user
@@ -35,3 +35,12 @@ def create_user(db: Session, user: UserModel) -> ApiMessageResponse:
     db.add(user_dal)
     db.commit()
     return ApiMessageResponse(message='User added successfully', is_success=True)
+
+
+def delete_user(db: Session, user_id: str) -> bool:
+    user = db.get(User, user_id)
+    if user:
+        db.delete(user)
+        db.commit()
+        return True
+    return False
