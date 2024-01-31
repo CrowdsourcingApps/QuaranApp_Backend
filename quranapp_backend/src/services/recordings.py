@@ -83,14 +83,14 @@ def share_recording(db: Session, recording_id: uuid.UUID, recipient_id: str) -> 
     return db_shared_recoding
 
 
-def get_recording_by_id(db: Session, recording_id: uuid.UUID):
+def get_recording_by_id(db: Session, recording_id: uuid.UUID) -> Recording:
     recording = db.get(Recording, recording_id)
     if recording is None or recording.is_deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Recording with given id does not exist')
-    return recording
+    return recording # noqa
 
 
-def delete_recording(db: Session, recording_id: uuid.UUID):
+def delete_recording(db: Session, recording_id: uuid.UUID) -> None:
     recording = get_recording_by_id(db, recording_id)
     recording.is_deleted = True
     db.query(SharedRecording).filter_by(recording_id=recording_id).delete()
