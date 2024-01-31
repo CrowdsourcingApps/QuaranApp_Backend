@@ -57,12 +57,10 @@ def get_user(db_session, user, user_index):
 
 
 def pytest_unconfigure(config): # noqa
-    from src.config import db_url
+    from src.dal.database import SessionLocal
     from src.services.users import delete_user
     global USER_1, USER_2
 
-    engine = create_engine(db_url)
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine) # noqa
     db = SessionLocal()
     try:
         if USER_1 is not None:
