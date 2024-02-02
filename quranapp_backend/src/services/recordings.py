@@ -1,5 +1,6 @@
 import uuid
 
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.dal.models import Recording, AyahPart, SharedRecording
@@ -15,7 +16,10 @@ def create_recording(db: Session, user_id: str, start: AyahPart, end: AyahPart, 
 
 
 def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
-    recordings = db.query(Recording).filter_by(user_id=user_id).all()
+    recordings = (db.query(Recording)
+                  .filter_by(user_id=user_id)
+                  .filter(Recording.is_deleted.isnot(True))
+                  .all())
     result = []
     for recording in recordings:
         start = recording.start
@@ -79,5 +83,22 @@ def share_recording(db: Session, recording_id: uuid.UUID, recipient_id: str) -> 
     return db_shared_recoding
 
 
-def get_recording_by_id(db: Session, recording_id: uuid.UUID):
-    return db.query(Recording).filter_by(id=recording_id).first()
+def get_recording_by_id(db: Session, recording_id: uuid.UUID) -> Recording:
+    recording = db.get(Recording, recording_id)
+    if recording is None or recording.is_deleted:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Recording with given id does not exist')
+    return recording # noqa
+
+
+def delete_recording(db: Session, recording_id: uuid.UUID) -> None:
+    recording = get_recording_by_id(db, recording_id)
+    recording.is_deleted = True
+    db.query(SharedRecording).filter_by(recording_id=recording_id).delete()
+    db.commit()
+
+
+def check_recording_owner(db: Session, user_id: str, recording_id: uuid.UUID) -> bool:
+    recording = get_recording_by_id(db, recording_id)
+    if user_id != recording.user_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
+    return True

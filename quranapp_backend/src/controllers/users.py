@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
 from src.controllers.dependencies import db_session_dependency, api_key_dependency
-from src.models import UserModel
+from src.models import UserModel, ApiMessageResponse
 from src.services import users_service
 
 user_router = APIRouter(
@@ -34,13 +34,15 @@ def find_user(user_alias: str, db: Session = db_session_dependency) -> UserModel
 def check_if_alias_exists(
         user_alias: str,
         db: Session = db_session_dependency
-) -> bool:
-    return users_service.check_if_alias_exists(db, user_alias)
+) -> ApiMessageResponse:
+    if users_service.check_if_alias_exists(db, user_alias):
+        return ApiMessageResponse(message='Alias exists', is_success=True)
+    return ApiMessageResponse(message='Alias does not exist', is_success=False)
 
 
 @user_router.post("/create")
 def create_user(
         user: UserModel,
         db: Session = db_session_dependency
-) -> object:
+) -> ApiMessageResponse:
     return users_service.create_user(db, user)

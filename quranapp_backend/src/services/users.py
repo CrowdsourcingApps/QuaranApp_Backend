@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 import src.mappers as mapper
 from src.dal.models import User
-from src.models import UserModel
+from src.models import UserModel, ApiMessageResponse
 
 
 def get_user_by_id(db: Session, user_id: str) -> UserModel | None:
@@ -24,7 +24,7 @@ def check_if_alias_exists(db: Session, alias: str) -> bool:
     return db.query(User.id).filter_by(alias=alias).first() is not None
 
 
-def create_user(db: Session, user: UserModel) -> object:
+def create_user(db: Session, user: UserModel) -> ApiMessageResponse:
     if check_if_alias_exists(db, user.alias):
         raise HTTPException(status_code=409, detail=f'Alias {user.alias} already in use.')
 
@@ -34,7 +34,7 @@ def create_user(db: Session, user: UserModel) -> object:
     user_dal = mapper.user.map_to_dal(user)
     db.add(user_dal)
     db.commit()
-    return {'message': 'User added successfully'}
+    return ApiMessageResponse(message='User added successfully', is_success=True)
 
 
 def delete_user(db: Session, user_id: str) -> bool:
