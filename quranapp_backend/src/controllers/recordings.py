@@ -1,5 +1,7 @@
-from fastapi import APIRouter, UploadFile, HTTPException, status, File, Form
+import uuid
+
 from sqlalchemy.orm import Session
+from fastapi import APIRouter, UploadFile, HTTPException, status, File, Form
 
 import src.mappers as mapper
 from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
@@ -64,7 +66,9 @@ def upload_recording(
     if not utils.check_if_valid_uuid(file_uuid):
         raise HTTPException(detail="Filename is not a valid UUID", status_code=status.HTTP_400_BAD_REQUEST)
 
-    if recordings_service.get_recording_by_id(db, file_uuid):
+    file_uuid = uuid.UUID(file_uuid)
+
+    if recordings_service.check_if_recording_exists(db, file_uuid):
         raise HTTPException(detail="Recording with this file already exists", status_code=status.HTTP_400_BAD_REQUEST)
 
     user = users_service.get_user_by_id(db, user_id)
@@ -87,7 +91,7 @@ def upload_recording(
     audio_url = azure_blob_storage.upload_file(filename=file_name, file=audio_file.file)
 
     return recordings_service.create_recording(
-        db=db, id_=file_uuid, user_id=user_id, start=start, end=end, audio_url=audio_url
+        db=db, recording_id=file_uuid, user_id=user_id, start=start, end=end, audio_url=audio_url
     )
 
 
