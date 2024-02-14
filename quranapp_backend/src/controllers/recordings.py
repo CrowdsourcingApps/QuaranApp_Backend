@@ -43,7 +43,7 @@ def get_available_recordings(user_id: str = jwt_dependency, db: Session = db_ses
 @recordings_router.post("/upload", response_model=Recording)
 def upload_recording(
         riwayah: RiwayahEnum = Form(),
-        publisher: PublisherEnum = Form("MADINA"),
+        publisher: PublisherEnum = Form(PublisherEnum.MADINA),
         start_surah_number: int = Form(),
         start_ayah_in_surah_number: int = Form(),
         start_part_number: int = Form(0),
