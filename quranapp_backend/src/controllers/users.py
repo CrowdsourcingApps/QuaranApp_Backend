@@ -21,13 +21,10 @@ def get_user(user_id: str, db: Session = db_session_dependency) -> UserModel:
     return user
 
 
-@user_router.get("/find/{user_alias}", response_model=UserModel)
-def find_user(user_alias: str, db: Session = db_session_dependency) -> UserModel:
-    user = users_service.get_user_by_alias(db, user_alias)
-    if user is None:
-        raise HTTPException(status_code=404, detail='User not found by Alias')
-
-    return user
+@user_router.get("/find/{user_alias}", response_model=list[UserModel])
+def find_user(user_alias: str, db: Session = db_session_dependency) -> list[UserModel]:
+    users = users_service.find_user_by_alias(db, user_alias)
+    return users
 
 
 @user_router.get("/is-alias-available/{user_alias}")

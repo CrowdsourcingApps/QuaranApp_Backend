@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy import or_, text
 from sqlalchemy.orm import Session
 
 import src.mappers as mapper
@@ -14,14 +15,30 @@ def get_user_by_id(db: Session, user_id: str) -> UserModel | None:
 
 
 def get_user_by_alias(db: Session, alias: str) -> UserModel | None:
-    user = db.query(User).filter_by(alias=alias).first()
+    formatted_alias = alias.strip().lower()
+    user = db.query(User).filter_by(alias=formatted_alias).first()
     if user is not None:
         db.expunge(user)
     return user
 
 
+def find_user_by_alias(db: Session, alias: str) -> list[type(UserModel)]:
+    prefix = alias.strip().lower()
+    query = db.query(User).filter(
+        or_(
+            User.alias.like(text(':prefix')),  # noqa
+            User.name.like(text(':prefix')),  # noqa
+            User.surname.like(text(':prefix'))  # noqa
+        )
+    )
+
+    result = query.params(prefix=f'{prefix}%').all()
+    return result
+
+
 def check_if_alias_exists(db: Session, alias: str) -> bool:
-    return db.query(User.id).filter_by(alias=alias).first() is not None
+    formatted_alias = alias.strip().lower()
+    return db.query(User.id).filter_by(alias=formatted_alias).first() is not None
 
 
 def create_user(db: Session, user: UserModel) -> ApiMessageResponse:
