@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 import src.mappers as mapper
 from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
-from src.dal.enums import RiwayahEnum
+from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording, ApiMessageResponse
 from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service
 
@@ -42,26 +42,30 @@ def get_available_recordings(user_id: str = jwt_dependency, db: Session = db_ses
 
 @recordings_router.post("/upload", response_model=Recording)
 def upload_recording(
+        riwayah: RiwayahEnum = Form(),
+        publisher: PublisherEnum = Form(PublisherEnum.MADINA),
         start_surah_number: int = Form(),
         start_ayah_in_surah_number: int = Form(),
         start_part_number: int = Form(0),
         end_surah_number: int = Form(),
         end_ayah_in_surah_number: int = Form(),
         end_part_number: int = Form(0),
-        riwayah: RiwayahEnum = Form(),
         audio_file: UploadFile = File(),
         user_id: str = jwt_dependency,
         db: Session = db_session_dependency
 ):
-    recording_data = mapper.recording.map_create_request_to_model(start_surah_number, start_ayah_in_surah_number,
-                                                                  start_part_number, end_surah_number,
-                                                                  end_ayah_in_surah_number, end_part_number, riwayah)
+    recording_data = mapper.recording.map_create_request_to_model(
+        start_surah_number, start_ayah_in_surah_number,
+        start_part_number, end_surah_number,
+        end_ayah_in_surah_number, end_part_number, riwayah, publisher
+    )
+
     user = users_service.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
 
-    start = ayah_parts.get_ayah_part(db, recording_data.start, recording_data.riwayah)  # noqa
-    end = ayah_parts.get_ayah_part(db, recording_data.end, recording_data.riwayah)  # noqa
+    start = ayah_parts.get_ayah_part(db, recording_data.start, recording_data.riwayah, recording_data.publisher)
+    end = ayah_parts.get_ayah_part(db, recording_data.end, recording_data.riwayah, recording_data.publisher)
 
     if not all([start, end]):
         message = ""

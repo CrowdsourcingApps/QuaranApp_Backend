@@ -1,4 +1,4 @@
-from src.dal.enums import RiwayahEnum
+from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.dal.models import Recording, AyahPart
 from src.models import AyahPartSearch
 from src.services import ayah_parts
@@ -18,9 +18,13 @@ def set_init_data(db_session):
         return
 
     start_ayah_part = ayah_parts.get_ayah_part(
-        db_session, AyahPartSearch(surah_number=1,ayah_in_surah_number=0,part_number=0), RiwayahEnum.QALOON)  # noqa
+        db_session, AyahPartSearch(surah_number=1, ayah_in_surah_number=0, part_number=0),
+        RiwayahEnum.QALOON, PublisherEnum.MADINA
+    )
     end_ayah_part = ayah_parts.get_ayah_part(
-        db_session, AyahPartSearch(surah_number=1,ayah_in_surah_number=1,part_number=0), RiwayahEnum.QALOON)  # noqa
+        db_session, AyahPartSearch(surah_number=1, ayah_in_surah_number=1, part_number=0),
+        RiwayahEnum.QALOON, PublisherEnum.MADINA
+    )
 
 
 def test_create_recording(db_session, user1):
