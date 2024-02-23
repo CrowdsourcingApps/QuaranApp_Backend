@@ -1,4 +1,4 @@
-name: Heroku Deploy
+name: Pull Request Check
 
 on:
   push:
@@ -19,7 +19,7 @@ defaults:
     working-directory: ./quranapp_backend
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
