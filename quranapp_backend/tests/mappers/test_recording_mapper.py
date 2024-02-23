@@ -5,9 +5,13 @@ from src.models import AyahPartSearch, RecordingCreate
 
 def test_map_create_request_to_model():
     recording_create = map_create_request_to_model(
-        1, 1, 0,
-        2, 2, 1,
-        RiwayahEnum.QALOON)
+        start_surah_number=1,
+        start_ayah_in_surah_number=1,
+        start_part_number=0,
+        end_surah_number=2,
+        end_ayah_in_surah_number=2,
+        end_part_number=1,
+        riwayah=RiwayahEnum.QALOON)
 
     assert recording_create is not None
     assert type(recording_create) is RecordingCreate
