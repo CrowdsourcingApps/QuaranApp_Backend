@@ -1,4 +1,5 @@
 from sqlalchemy import Column, String, Integer
+from sqlalchemy.orm import relationship
 
 from src.dal.database import Base
 
@@ -10,3 +11,5 @@ class Surah(Base):
     revelation_type = Column(String, nullable=False)
     title_eng = Column(String, nullable=False)
     title_eng_translation = Column(String, nullable=False)
+
+    ayahs = relationship("Ayah", back_populates="surah")

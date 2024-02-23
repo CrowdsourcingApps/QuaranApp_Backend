@@ -28,7 +28,8 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
         result.append(DetailedRecording(
             id=recording.id,
             user_alias=recording.user.alias,
-            riwayah=start.ayah.riwayah,
+            riwayah=start.ayah.mushaf.riwayah,
+            publisher=start.ayah.mushaf.publisher,
             start=AyahPartDetailed(
                 surah_number=start.ayah.surah_number,
                 ayah_in_surah_number=start.ayah.ayah_in_surah_number,
@@ -53,7 +54,8 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
         result.append(DetailedRecording(
             id=shared.recording.id,
             user_alias=shared.recording.user.alias,
-            riwayah=start.ayah.riwayah,
+            riwayah=start.ayah.mushaf.riwayah,
+            publisher=start.ayah.mushaf.publisher,
             start=AyahPartDetailed(
                 surah_number=start.ayah.surah_number,
                 ayah_in_surah_number=start.ayah.ayah_in_surah_number,

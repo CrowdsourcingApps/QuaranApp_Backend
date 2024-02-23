@@ -4,20 +4,32 @@ import os
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
 
-from src.dal.enums import RiwayahEnum
-from src.dal.models import AyahPart, Ayah
+from src.dal.models import AyahPart, Ayah, Mushaf
+from src.dal.utils import create_default_mushaf
 
 
-def fill_database_with_riwayah_data(session, file_name):
+# todo временные скрипты. Нужны для заполнения начальных данных по Ayah и AyahPart'ам, пока нет эндпоинта для
+#  загрузки данных из файла. После появляния эндпоинта - скрипты можно удалить
+
+# ================
+
+def fill_database_with_initial_data_new(session, file_name):
+    if session.query(Ayah).count() != 0 or session.query(AyahPart).count() != 0:
+        return
+
     data_directory = os.path.join(os.path.dirname(__file__), "data_files")
     with open(os.path.join(data_directory, file_name)) as f:
         initial_data = json.load(f)
-        for riwayah, data in initial_data.items():
+        mushaf = session.query(Mushaf).first()
+        if not mushaf:
+            mushaf = create_default_mushaf(session)
+
+        for data in initial_data.values():
             for surah_number, ayah_count in data.items():
                 ayah_data = list()
                 for ayah_in_surah_number in range(ayah_count + 1):
                     ayah_data.append({
-                        "riwayah": riwayah,
+                        "mushaf_id": mushaf.id,
                          "surah_number": surah_number,
                          "ayah_in_surah_number": ayah_in_surah_number
                     })
@@ -42,6 +54,9 @@ def fill_database_with_riwayah_data(session, file_name):
                 session.commit()
 
 
-def delete_riwayah_data(session: Session, riwayah: RiwayahEnum):
-    session.query(AyahPart).filter(AyahPart.ayah.has(riwayah=riwayah)).delete()
-    session.query(Ayah).filter(Ayah.riwayah == riwayah).delete()
+def delete_initial_data(session: Session):
+    session.query(AyahPart).delete()
+    session.query(Ayah).delete()
+    session.commit()
+
+# ================
