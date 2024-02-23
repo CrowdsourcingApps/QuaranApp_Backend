@@ -8,6 +8,13 @@ on:
     branches:
       - develop
 
+env:
+  POSTGRES_USER: ${{secrets.POSTGRES_USER_PROD}}
+  POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD_PROD}}
+  DB_HOST: ${{secrets.DB_HOST_PROD}}
+  POSTGRES_DB: ${{secrets.POSTGRES_DB_PROD}}
+  DB_SSL: ${{env.DB_SSL}}
+
 defaults:
   run:
     working-directory: ./quranapp_backend
