@@ -8,12 +8,6 @@ on:
     branches:
       - develop
 
-env:
-  POSTGRES_USER: ${{secrets.POSTGRES_USER_PROD}}
-  POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD_PROD}}
-  DB_HOST: ${{secrets.DB_HOST_PROD}}
-  POSTGRES_DB: ${{secrets.POSTGRES_DB_PROD}}
-
 defaults:
   run:
     working-directory: ./quranapp_backend
@@ -44,6 +38,11 @@ jobs:
           pip install -r requirements.txt
           
       - name: Tests
+        env:
+          POSTGRES_USER: ${{secrets.POSTGRES_USER_PROD}}
+          POSTGRES_PASSWORD: ${{secrets.POSTGRES_PASSWORD_PROD}}
+          DB_HOST: ${{secrets.DB_HOST_PROD}}
+          POSTGRES_DB: ${{secrets.POSTGRES_DB_PROD}}
         run: |
           pytest
         
