@@ -1,3 +1,5 @@
+import uuid
+
 from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.dal.models import Recording, AyahPart
 from src.models import AyahPartSearch
@@ -32,7 +34,8 @@ class TestRecordingService:
         user_id = user1.id
         self.set_init_data(db_session)
 
-        recording = create_recording(db_session, user_id, self.start_ayah_part, self.end_ayah_part, self.audio_url)
+        recording_id = uuid.uuid4()
+        recording = create_recording(db_session, recording_id,  user_id, self.start_ayah_part, self.end_ayah_part, self.audio_url)
         # сохраняем рекординг в атрибут класса, а не в атрибут инстанса
         test_class.saved_recording = recording
 
