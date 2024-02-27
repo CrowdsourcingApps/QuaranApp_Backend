@@ -13,7 +13,8 @@ from src.services import (
     surahs as surahs_service,
     ayah_part_texts as ayah_part_texts_service,
     mushaf_pages as mushaf_pages_service,
-    ayahs as ayahs_service
+    ayahs as ayahs_service,
+    ayah_parts as ayah_parts_service
 )
 
 
@@ -34,6 +35,7 @@ class MushafDataUploader:
     def __init__(self, db: Session):
         self.db = db
         self.existing_surahs_numbers = set([surah.id for surah in surahs_service.get_all_surahs(db)])
+        self.existing_ayah_parts = set()
         self.ayah_parts_texts_to_ids_mapping = {
             ayah_part_text.text: ayah_part_text.id
             for ayah_part_text in ayah_part_texts_service.get_all_ayah_part_texts(db)
@@ -48,6 +50,12 @@ class MushafDataUploader:
     def _fill_ids_for_existing_ayahs(self, mushaf_id: uuid.UUID) -> None:
         for ayah in ayahs_service.get_ayahs_by_mushaf_id(self.db, mushaf_id):
             self.ayahs_to_ids_mapping[f"{ayah.surah_number}-{ayah.ayah_in_surah_number}"] = ayah.id
+
+    def _fill_ids_for_existing_ayah_parts(self, mushaf_id: uuid.UUID) -> None:
+        for ayah_part in ayah_parts_service.get_extended_ayah_parts_by_mushaf_id(self.db, mushaf_id):
+            self.existing_ayah_parts.add(
+                f"{ayah_part.ayah.surah_number}-{ayah_part.ayah.ayah_in_surah_number}-{ayah_part.part_number}"
+            )
 
     def _bulk_create_mushaf_pages(self, mushaf_pages_data: list[dict]) -> list[MushafPage]:
         db_mushaf_pages = self.db.scalars(
@@ -92,7 +100,6 @@ class MushafDataUploader:
                 markers_data.append({
                     "order": order, "is_new_line": is_new_line, "ayah_part_id": ayah_part_id,
                     "x": marker["x"], "y1": marker["y1"], "y2": marker["y2"],
-
                 })
                 order += 1
 
@@ -150,6 +157,11 @@ class MushafDataUploader:
             ayah_part_number = uploaded_ayah_part_data.part_number
             ayah_part_key = f"{ayah_key}-{ayah_part_number}"
 
+            if ayah_part_key in self.existing_ayah_parts:
+                # Сейчас - просто пропускаем создание AyahPart и AyahPartMarkers.
+                # В дальнейшем - тут будет обновление AyahPart, а в ветке else - создание AyahPart и AyahPartMarkers
+                continue
+
             if ayah_part_key in ayah_parts_data:
                 # Исключение - говорим, что данные по такому-то ая парту дублируются
                 pass
@@ -193,5 +205,6 @@ class MushafDataUploader:
 
         self._fill_ids_for_existing_ayahs(mushaf_id=mushaf.id)
         self._fill_ids_for_existing_mushaf_pages(mushaf_id=mushaf.id)
+        self._fill_ids_for_existing_ayah_parts(mushaf_id=mushaf.id)
 
         self._create_objects_from_mushaf_data(mushaf_id=mushaf.id, data=validated_mushaf_data.ayah_parts_data)
