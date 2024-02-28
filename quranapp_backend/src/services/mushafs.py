@@ -4,11 +4,11 @@ from tempfile import SpooledTemporaryFile
 
 from sqlalchemy import insert
 from sqlalchemy.orm import Session
-from pydantic import ValidationError
 
+from src.dal.database import Base
 from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.dal.models import Mushaf, Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker
-from src.models.mushaf_data import MushafData, AyahPartData
+from src.models.mushaf_data import MushafData, AyahPartData, AyahPartMarkerData
 from src.services import (
     surahs as surahs_service,
     ayah_part_texts as ayah_part_texts_service,
@@ -28,6 +28,10 @@ def create_mushaf(db: Session, riwayah: RiwayahEnum, publisher: PublisherEnum) -
 
 def get_mushaf_if_exists(db: Session, riwayah: RiwayahEnum, publisher: PublisherEnum) -> Mushaf | None:
     return db.query(Mushaf).filter_by(riwayah=riwayah, publisher=publisher).first()
+
+
+class DataUploadException(Exception):
+    pass
 
 
 class MushafDataUploader:
@@ -57,56 +61,38 @@ class MushafDataUploader:
                 f"{ayah_part.ayah.surah_number}-{ayah_part.ayah.ayah_in_surah_number}-{ayah_part.part_number}"
             )
 
-    def _bulk_create_mushaf_pages(self, mushaf_pages_data: list[dict]) -> list[MushafPage]:
-        db_mushaf_pages = self.db.scalars(
-            insert(MushafPage).returning(MushafPage),
-            mushaf_pages_data
-        )
-        return list(db_mushaf_pages)
+    def _fill_ids_for_existing_objects(self, mushaf_id: uuid.UUID) -> None:
+        self._fill_ids_for_existing_ayahs(mushaf_id=mushaf_id)
+        self._fill_ids_for_existing_mushaf_pages(mushaf_id=mushaf_id)
+        self._fill_ids_for_existing_ayah_parts(mushaf_id=mushaf_id)
 
-    def _bulk_create_ayah_part_texts(self, ayah_part_texts_data: list[dict]) -> list[AyahPartText]:
-        db_ayah_part_texts = self.db.scalars(
-            insert(AyahPartText).returning(AyahPartText),
-            ayah_part_texts_data
+    def _bulk_create_objects(self, objects_data: list[dict], db_model: Base) -> list[Base]:
+        """Создает и вовзращает объекты выбранной модели на основе передаваемых данных"""
+        db_objects = self.db.scalars(
+            insert(db_model).returning(db_model),
+            objects_data
         )
-        return list(db_ayah_part_texts)
+        return list(db_objects)
 
-    def _bulk_create_ayahs(self, ayah_data: list[dict]) -> list[Ayah]:
-        db_ayahs = self.db.scalars(
-            insert(Ayah).returning(Ayah),
-            ayah_data
-        )
-        return list(db_ayahs)
+    def _update_ayah_part(self, ayah_part_key: str, ayah_part_data: AyahPartData):
+        pass
 
-    def _bulk_create_ayah_parts(self, ayah_part_data: list[dict]) -> list[AyahPart]:
-        db_ayah_parts = self.db.scalars(
-            insert(AyahPart).returning(AyahPart),
-            ayah_part_data
-        )
-        return list(db_ayah_parts)
-
-    def _bulk_create_ayah_part_markers(self, markers_data: list[dict]) -> list[AyahPartMarker]:
-        db_ayah_part_markers = self.db.scalars(
-            insert(AyahPartMarker).returning(AyahPartMarker),
-            markers_data
-        )
-        return list(db_ayah_part_markers)
-
-    def _add_data_for_ayah_markers(self, markers: list[list[dict]], ayah_part_id: uuid.UUID, markers_data: list):
+    def _add_data_for_ayah_markers(
+            self, markers: list[list[AyahPartMarkerData]], ayah_part_id: uuid.UUID, markers_data: list
+    ):
         order = 0
         for particular_line_markers in markers:
             for ind, marker in enumerate(particular_line_markers):
                 is_new_line = True if ind == 0 else False
                 markers_data.append({
                     "order": order, "is_new_line": is_new_line, "ayah_part_id": ayah_part_id,
-                    "x": marker["x"], "y1": marker["y1"], "y2": marker["y2"],
+                    "x": marker.x, "y1": marker.y1, "y2": marker.y2,
                 })
                 order += 1
 
     def _validate_surah_number(self, surah_number: int):
         if surah_number not in self.existing_surahs_numbers:
-            # Исключение - говорим, что суры с номером таким-то еще не существует в БД
-            pass
+            raise DataUploadException(f"Surah with number '{surah_number}' does not exist")
 
     def _create_objects_from_mushaf_data(self, mushaf_id: uuid.UUID, data: list[AyahPartData]) -> None:
         ayahs_data = list()
@@ -119,7 +105,7 @@ class MushafDataUploader:
 
             surah_number, ayah_in_surah_number = uploaded_ayah_part_data.surah_number, uploaded_ayah_part_data.ayah_number
 
-            # Добавление данных по Ayah в словарь, получение id Ayah
+            # Добавление данных по Ayah, получение id Ayah
             ayah_key = f"{surah_number}-{ayah_in_surah_number}"
             if ayah_key in self.ayahs_to_ids_mapping:
                 ayah_id = self.ayahs_to_ids_mapping[ayah_key]
@@ -153,58 +139,62 @@ class MushafDataUploader:
                 mushaf_pages_data.append({"id": mushaf_page_id, "index": page_number, "mushaf_id": mushaf_id})
                 self.mushaf_pages_to_ids_mapping[page_number] = mushaf_page_id
 
-            # Добавление данных по AyahPart в словарь, получение id AyahPart
+            # Добавление данных по AyahPart и AyahPartMarkers | обновление AyahPart
             ayah_part_number = uploaded_ayah_part_data.part_number
             ayah_part_key = f"{ayah_key}-{ayah_part_number}"
 
             if ayah_part_key in self.existing_ayah_parts:
-                # Сейчас - просто пропускаем создание AyahPart и AyahPartMarkers.
-                # В дальнейшем - тут будет обновление AyahPart, а в ветке else - создание AyahPart и AyahPartMarkers
-                continue
+                self._update_ayah_part(ayah_part_key, uploaded_ayah_part_data)
 
-            if ayah_part_key in ayah_parts_data:
-                # Исключение - говорим, что данные по такому-то ая парту дублируются
-                pass
+            else:
+                if ayah_part_key in ayah_parts_data:
+                    raise DataUploadException(
+                        f"Data is duplicated for the following ayah part: "
+                        f"surah number = {surah_number}, ayah number = {ayah_in_surah_number},"
+                        f"part number = {ayah_part_number}"
+                    )
 
-            ayah_part_id = uuid.uuid4()
-            ayah_parts_data[ayah_part_key] = {
-                "id": ayah_part_id, "part_number": ayah_part_number, "ayah_id": ayah_id,
-                "ayah_part_text_id": ayah_part_text_id, "mushaf_page_id": mushaf_page_id
-            }
+                ayah_part_id = uuid.uuid4()
+                ayah_parts_data[ayah_part_key] = {
+                    "id": ayah_part_id, "part_number": ayah_part_number, "ayah_id": ayah_id,
+                    "ayah_part_text_id": ayah_part_text_id, "mushaf_page_id": mushaf_page_id
+                }
 
-            # Добавление данных по AyahPartMarkers
-            self._add_data_for_ayah_markers(uploaded_ayah_part_data.lines, ayah_part_id, markers_data)
+                self._add_data_for_ayah_markers(uploaded_ayah_part_data.lines, ayah_part_id, markers_data)
 
         if ayahs_data:
-            self._bulk_create_ayahs(ayahs_data)
+            self._bulk_create_objects(ayahs_data, Ayah)
 
         if ayah_part_texts_data:
-            self._bulk_create_ayah_part_texts(ayah_part_texts_data)
+            self._bulk_create_objects(ayah_part_texts_data, AyahPartText)
+
         if mushaf_pages_data:
-            self._bulk_create_mushaf_pages(mushaf_pages_data)
+            self._bulk_create_objects(mushaf_pages_data, MushafPage)
 
         if ayah_parts_data:
-            self._bulk_create_ayah_parts(list(ayah_parts_data.values()))
+            self._bulk_create_objects(list(ayah_parts_data.values()), AyahPart)
 
         if markers_data:
-            self._bulk_create_ayah_part_markers(markers_data)
+            self._bulk_create_objects(markers_data, AyahPartMarker)
 
         self.db.commit()
 
     def save_data_from_mushaf_file(self, file: SpooledTemporaryFile):
-        mushaf_data = json.load(file)
-
         try:
-            validated_mushaf_data = MushafData(**mushaf_data)
-        except ValidationError:
-            return
+            mushaf_data = json.load(file)
+        except json.JSONDecodeError as e:
+            raise DataUploadException(f"Error in file formatting - not valid json. Details: {e.args}")
+
+        if not isinstance(mushaf_data, dict):
+            raise DataUploadException("Unexpected file structure. Expected: {...}")
+
+        # ValidationError, который здесь может возникнуть, обрабатывается в самой функции эндпоинта
+        validated_mushaf_data = MushafData(**mushaf_data)
 
         mushaf = get_mushaf_if_exists(self.db, validated_mushaf_data.riwayah, validated_mushaf_data.publisher)
         if not mushaf:
             mushaf = create_mushaf(self.db, validated_mushaf_data.riwayah, validated_mushaf_data.publisher)
 
-        self._fill_ids_for_existing_ayahs(mushaf_id=mushaf.id)
-        self._fill_ids_for_existing_mushaf_pages(mushaf_id=mushaf.id)
-        self._fill_ids_for_existing_ayah_parts(mushaf_id=mushaf.id)
+        self._fill_ids_for_existing_objects(mushaf_id=mushaf.id)
 
         self._create_objects_from_mushaf_data(mushaf_id=mushaf.id, data=validated_mushaf_data.ayah_parts_data)
