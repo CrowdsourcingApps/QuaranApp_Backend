@@ -77,7 +77,7 @@ class MushafDataUploader:
     def _update_ayah_part(self, ayah_part_key: str, ayah_part_data: AyahPartData):
         pass
 
-    def _add_data_for_ayah_markers(
+    def _add_data_for_ayah_part_markers(
             self, markers: list[list[AyahPartMarkerData]], ayah_part_id: uuid.UUID, markers_data: list
     ):
         order = 0
@@ -160,7 +160,7 @@ class MushafDataUploader:
                     "ayah_part_text_id": ayah_part_text_id, "mushaf_page_id": mushaf_page_id
                 }
 
-                self._add_data_for_ayah_markers(uploaded_ayah_part_data.lines, ayah_part_id, markers_data)
+                self._add_data_for_ayah_part_markers(uploaded_ayah_part_data.lines, ayah_part_id, markers_data)
 
         if ayahs_data:
             self._bulk_create_objects(ayahs_data, Ayah)
