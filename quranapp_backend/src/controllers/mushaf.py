@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from src.dal.enums import RiwayahEnum
 
+
 mushaf_router = APIRouter(
     prefix="/mushaf",
     tags=["mushaf"]
@@ -29,4 +30,3 @@ def get_surahs(riwayah: RiwayahEnum, publisher: str):
     # RETURN
     # Sorted by surah number List of (Surah, pageIndex)
     pass
-
