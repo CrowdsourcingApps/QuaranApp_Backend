@@ -8,3 +8,4 @@ class RiwayahEnum(Enum):
 
 class PublisherEnum(Enum):
     MADINA = "Madina"
+    JAWAMEE = "Jawamee"
