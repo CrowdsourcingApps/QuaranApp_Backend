@@ -7,8 +7,10 @@ from src.dal.models import Recording, AyahPart, SharedRecording
 from src.models import DetailedRecording, AyahPartDetailed
 
 
-def create_recording(db: Session, user_id: str, start: AyahPart, end: AyahPart, audio_url: str) -> Recording:
-    db_recording = Recording(user_id=user_id, start=start, end=end, audio_url=audio_url)
+def create_recording(
+        db: Session, recording_id: uuid.UUID,  user_id: str, start: AyahPart, end: AyahPart, audio_url: str
+) -> Recording:
+    db_recording = Recording(id=recording_id, user_id=user_id, start=start, end=end, audio_url=audio_url)
     db.add(db_recording)
     db.commit()
     db.refresh(db_recording)
@@ -90,6 +92,10 @@ def get_recording_by_id(db: Session, recording_id: uuid.UUID) -> Recording:
     if recording is None or recording.is_deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Recording with given id does not exist')
     return recording # noqa
+
+
+def check_if_recording_exists(db: Session, recording_id: uuid.UUID) -> bool:
+    return bool(db.get(Recording, recording_id))
 
 
 def delete_recording(db: Session, recording_id: uuid.UUID) -> None:

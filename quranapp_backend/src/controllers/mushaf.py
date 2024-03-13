@@ -9,6 +9,7 @@ from src.services import surahs_service, mushafs_service, mushaf_pages_service
 from src.controllers.dependencies import db_session_dependency
 from src.models.surah import SurahInMushaf
 
+
 mushaf_router = APIRouter(
     prefix="/mushaf",
     tags=["mushaf"]

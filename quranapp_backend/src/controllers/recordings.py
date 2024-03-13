@@ -1,13 +1,13 @@
 import uuid
 
-from fastapi import APIRouter, UploadFile, HTTPException, status, File, Form
 from sqlalchemy.orm import Session
+from fastapi import APIRouter, UploadFile, HTTPException, status, File, Form
 
 import src.mappers as mapper
 from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
 from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.models import Recording, RecordingShare, SharedRecording, DetailedRecording, ApiMessageResponse
-from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service
+from src.services import azure_blob_storage, recordings as recordings_service, ayah_parts, users_service, utils
 
 recordings_router = APIRouter(
     prefix="/recordings",
@@ -60,6 +60,17 @@ def upload_recording(
         end_ayah_in_surah_number, end_part_number, riwayah, publisher
     )
 
+    file_name = audio_file.filename
+    file_uuid = file_name.split(".")[0]
+
+    if not utils.check_if_valid_uuid(file_uuid):
+        raise HTTPException(detail="Filename is not a valid UUID", status_code=status.HTTP_400_BAD_REQUEST)
+
+    file_uuid = uuid.UUID(file_uuid)
+
+    if recordings_service.check_if_recording_exists(db, file_uuid):
+        raise HTTPException(detail="Recording with this file already exists", status_code=status.HTTP_400_BAD_REQUEST)
+
     user = users_service.get_user_by_id(db, user_id)
     if not user:
         raise HTTPException(detail="User not found by ID", status_code=status.HTTP_400_BAD_REQUEST)
@@ -70,16 +81,18 @@ def upload_recording(
     if not all([start, end]):
         message = ""
         if not start and not end:
-            message = "Start and end ayah were not found."
+            message = "Start and end ayah were not found"
         elif not start:
-            message = "Start ayah was not found."
+            message = "Start ayah was not found"
         elif not end:
-            message = "End ayah was not found."
+            message = "End ayah was not found"
         raise HTTPException(detail=message, status_code=status.HTTP_400_BAD_REQUEST)
 
-    audio_url = azure_blob_storage.upload_file(filename=audio_file.filename, file=audio_file.file)
+    audio_url = azure_blob_storage.upload_file(filename=file_name, file=audio_file.file)
 
-    return recordings_service.create_recording(db=db, user_id=user_id, start=start, end=end, audio_url=audio_url)
+    return recordings_service.create_recording(
+        db=db, recording_id=file_uuid, user_id=user_id, start=start, end=end, audio_url=audio_url
+    )
 
 
 @recordings_router.delete("/{recording_id}", response_model=ApiMessageResponse)
