@@ -1,6 +1,9 @@
 import uuid
+from types import NoneType
 
 from pydantic import BaseModel
+
+from src.models.ayah_part_marker import AyahPartMarker
 
 
 class AyahPartBase(BaseModel):
@@ -19,3 +22,9 @@ class AyahPartDetailed(AyahPartBase):
 
 class AyahPart(BaseModel):
     id: uuid.UUID
+
+
+class MushafPageAyahPart(AyahPartBase):
+    text: str | NoneType
+    text_id: uuid.UUID | NoneType
+    markers: list[AyahPartMarker]
