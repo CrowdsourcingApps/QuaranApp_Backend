@@ -9,7 +9,9 @@ from src.dal.database import Base
 from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.dal.models import Mushaf, Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker
 from src.models.ayah_part_marker import AyahPartMarker as AyahPartMarkerBase
-from src.models.mushaf_data import MushafData, AyahPartData, AyahPartMarkerData
+from src.models.mushaf_data import (
+    AyahPartsData, AyahPartDetailData, AyahPartMarkerData, PageImagesData, PageImagesDetailData
+)
 from src.services import (
     surahs as surahs_service,
     ayah_part_texts as ayah_part_texts_service,
@@ -35,7 +37,7 @@ class DataUploadException(Exception):
     pass
 
 
-class MushafDataUploader:
+class AyahPartsDataUploader:
 
     def __init__(self, db: Session):
         self.db = db
@@ -146,7 +148,7 @@ class MushafDataUploader:
         if surah_number not in self.existing_surahs_numbers:
             raise DataUploadException(f"Surah with number '{surah_number}' does not exist")
 
-    def _create_objects_from_mushaf_data(self, mushaf_id: uuid.UUID, data: list[AyahPartData]) -> None:
+    def _create_objects_from_ayah_parts_data(self, mushaf_id: uuid.UUID, data: list[AyahPartDetailData]) -> None:
         ayahs_data = list()
         ayah_part_texts_data = list()
         mushaf_pages_data = list()
@@ -240,22 +242,105 @@ class MushafDataUploader:
 
         self.db.commit()
 
-    def save_data_from_mushaf_file(self, file: SpooledTemporaryFile):
+    def save_data_from_ayah_parts_file(self, file: SpooledTemporaryFile) -> None:
         try:
-            mushaf_data = json.load(file)
+            uploaded_data = json.load(file)
         except json.JSONDecodeError as e:
             raise DataUploadException(f"Error in file formatting - not valid json. Details: {e.args}")
 
-        if not isinstance(mushaf_data, dict):
+        if not isinstance(uploaded_data, dict):
             raise DataUploadException("Unexpected file structure. Expected: {...}")
 
         # ValidationError, который здесь может возникнуть, обрабатывается в самой функции эндпоинта
-        validated_mushaf_data = MushafData(**mushaf_data)
+        validated_ayah_parts_data = AyahPartsData(**uploaded_data)
 
-        mushaf = get_mushaf_if_exists(self.db, validated_mushaf_data.riwayah, validated_mushaf_data.publisher)
+        mushaf = get_mushaf_if_exists(self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher)
         if not mushaf:
-            mushaf = create_mushaf(self.db, validated_mushaf_data.riwayah, validated_mushaf_data.publisher)
+            mushaf = create_mushaf(self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher)
 
         self._fill_data_for_existing_objects(mushaf_id=mushaf.id)
 
-        self._create_objects_from_mushaf_data(mushaf_id=mushaf.id, data=validated_mushaf_data.ayah_parts_data)
+        self._create_objects_from_ayah_parts_data(mushaf_id=mushaf.id, data=validated_ayah_parts_data.ayah_parts_data)
+
+
+class PageImagesDataUploader:
+
+    def __init__(self, db: Session):
+        self.db = db
+        self.existing_mushaf_pages: dict[int, MushafPage] = dict()
+
+        self.processed_page_numbers = set()
+
+        self.mushaf_pages_to_update = list()
+
+    def _fill_existing_mushaf_pages(self, mushaf_id: uuid.UUID) -> None:
+        for mushaf_page in mushaf_pages_service.get_pages_by_mushaf_id(self.db, mushaf_id):
+            self.existing_mushaf_pages[mushaf_page.index] = mushaf_page
+
+    def _bulk_create_objects(self, objects_data: list[dict], db_model: Base) -> list[Base]:
+        db_objects = self.db.scalars(
+            insert(db_model).returning(db_model),
+            objects_data
+        )
+        return list(db_objects)
+
+    def _bulk_update_mushaf_pages(self) -> None:
+        self.db.execute(update(MushafPage), self.mushaf_pages_to_update)
+
+    def _update_mushaf_page(self, page_number: int, uploaded_page_data: PageImagesDetailData) -> None:
+        page = self.existing_mushaf_pages[page_number]
+        update_data = dict()
+        if page.light_mode_link != uploaded_page_data.light_mode_link:
+            update_data["light_mode_link"] = uploaded_page_data.light_mode_link
+        if page.dark_mode_link != uploaded_page_data.dark_mode_link:
+            update_data["dark_mode_link"] = uploaded_page_data.dark_mode_link
+        if update_data:
+            update_data["id"] = page.id
+            self.mushaf_pages_to_update.append(update_data)
+
+    def _create_objects_from_page_images_data(self, mushaf_id: uuid.UUID, data: list[PageImagesDetailData]) -> None:
+        mushaf_pages_data = list()
+
+        for uploaded_page_data in data:
+            page_number = uploaded_page_data.page_number
+
+            if page_number in self.processed_page_numbers:
+                raise DataUploadException(f"Data is duplicated for the following mushaf page: {page_number}")
+
+            self.processed_page_numbers.add(page_number)
+
+            if page_number in self.existing_mushaf_pages:
+                self._update_mushaf_page(page_number, uploaded_page_data)
+            else:
+                mushaf_pages_data.append({
+                    "index": page_number,
+                    "mushaf_id": mushaf_id,
+                    "light_mode_link": uploaded_page_data.light_mode_link,
+                    "dark_mode_link": uploaded_page_data.dark_mode_link
+                })
+
+        if mushaf_pages_data:
+            self._bulk_create_objects(mushaf_pages_data, MushafPage)
+
+        self._bulk_update_mushaf_pages()
+
+        self.db.commit()
+
+    def save_data_from_page_images_file(self, file: SpooledTemporaryFile) -> None:
+        try:
+            uploaded_data = json.load(file)
+        except json.JSONDecodeError as e:
+            raise DataUploadException(f"Error in file formatting - not valid json. Details: {e.args}")
+
+        if not isinstance(uploaded_data, dict):
+            raise DataUploadException("Unexpected file structure. Expected: {...}")
+
+        validated_page_images_data = PageImagesData(**uploaded_data)
+
+        mushaf = get_mushaf_if_exists(self.db, validated_page_images_data.riwayah, validated_page_images_data.publisher)
+        if not mushaf:
+            mushaf = create_mushaf(self.db, validated_page_images_data.riwayah, validated_page_images_data.publisher)
+
+        self._fill_existing_mushaf_pages(mushaf_id=mushaf.id)
+
+        self._create_objects_from_page_images_data(mushaf_id=mushaf.id, data=validated_page_images_data.pages)
