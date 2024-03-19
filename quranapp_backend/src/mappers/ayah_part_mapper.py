@@ -13,7 +13,7 @@ def map_to_page_details(page_id: uuid.UUID, ayah_parts: list[AyahPartDal]) -> Mu
             part_number=ayah_part.part_number,
             surah_number=ayah_part.ayah.surah_number,
             ayah_in_surah_number=ayah_part.ayah.ayah_in_surah_number,
-            text=ayah_part.text,
+            text=ayah_part.text.text,
             text_id=ayah_part.ayah_part_text_id,
             markers=_map_ayah_part_markers(ayah_part.markers)
         ))
