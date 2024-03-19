@@ -25,6 +25,7 @@ class AyahPart(BaseModel):
 
 
 class MushafPageAyahPart(AyahPartBase):
+    id: uuid.UUID
     text: str | NoneType
     text_id: uuid.UUID | NoneType
     markers: list[AyahPartMarker]

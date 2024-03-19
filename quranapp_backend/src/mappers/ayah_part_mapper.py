@@ -9,12 +9,13 @@ def map_to_page_details(page_id: uuid.UUID, ayah_parts: list[AyahPartDal]) -> Mu
     mapped_ayah_parts = []
     for ayah_part in ayah_parts:
         mapped_ayah_parts.append(MushafPageAyahPart(
+            id=ayah_part.id,
             part_number=ayah_part.part_number,
             surah_number=ayah_part.ayah.surah_number,
             ayah_in_surah_number=ayah_part.ayah.ayah_in_surah_number,
             text=ayah_part.text,
             text_id=ayah_part.ayah_part_text_id,
-            markers=__map_ayah_part_markers__(ayah_part.markers)
+            markers=_map_ayah_part_markers(ayah_part.markers)
         ))
 
     return MushafPageDetails(
@@ -24,7 +25,7 @@ def map_to_page_details(page_id: uuid.UUID, ayah_parts: list[AyahPartDal]) -> Mu
     )
 
 
-def __map_ayah_part_markers__(markers: list[AyahPartMarkerDal]):
+def _map_ayah_part_markers(markers: list[AyahPartMarkerDal]):
     mapped_markers = []
     for marker in markers:
         mapped_markers.append(AyahPartMarker(

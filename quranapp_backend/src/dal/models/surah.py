@@ -13,4 +13,4 @@ class Surah(Base):
     title_eng_translation = Column(String, nullable=False)
 
     ayahs = relationship("Ayah", back_populates="surah")
-    surah_in_mushaf = relationship("SurahInMushaf", back_populates="surah")
+    surahs_in_mushaf = relationship("SurahInMushaf", back_populates="surah")
