@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from src.dal.database import Base
 from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.dal.models import Mushaf, Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker
-from src.models.ayah_part_marker import AyahPartMarkerBase
+from src.models.ayah_part_marker import AyahPartMarker as AyahPartMarkerBase
 from src.models.mushaf_data import MushafData, AyahPartData, AyahPartMarkerData
 from src.services import (
     surahs as surahs_service,

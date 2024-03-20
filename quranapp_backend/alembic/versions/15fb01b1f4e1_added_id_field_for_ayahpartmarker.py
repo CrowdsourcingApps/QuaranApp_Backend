@@ -1,7 +1,7 @@
 """Added id field for ayah part markers table
 
 Revision ID: 15fb01b1f4e1
-Revises: 4136d4a1cc19
+Revises: b4ce0692f9f3
 Create Date: 2024-03-06 17:09:12.865469
 
 """
@@ -16,7 +16,7 @@ from src.dal.models import AyahPartMarker
 
 # revision identifiers, used by Alembic.
 revision: str = '15fb01b1f4e1'
-down_revision: Union[str, None] = '4136d4a1cc19'
+down_revision: Union[str, None] = 'b4ce0692f9f3'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
