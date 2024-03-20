@@ -9,8 +9,9 @@ from src.dal.database import Base
 
 class AyahPartMarker(Base):
     __tablename__ = "ayah_part_markers"
-    ayah_part_id = Column(UUID(as_uuid=True), ForeignKey("ayah_parts.id"), primary_key=True)
-    order = Column(SmallInteger, primary_key=True)
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    ayah_part_id = Column(UUID(as_uuid=True), ForeignKey("ayah_parts.id"), nullable=False)
+    order = Column(SmallInteger, nullable=False)
     x = Column(SmallInteger, nullable=False)
     y1 = Column(SmallInteger, nullable=False)
     y2 = Column(SmallInteger, nullable=False)

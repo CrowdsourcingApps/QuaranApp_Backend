@@ -46,7 +46,7 @@ def upgrade() -> None:
     sa.Column('y2', sa.SmallInteger(), nullable=False),
     sa.Column('is_new_line', sa.Boolean(), nullable=False),
     sa.ForeignKeyConstraint(['ayah_part_id'], ['ayah_parts.id'], ),
-    sa.PrimaryKeyConstraint('ayah_part_id', 'order')
+    sa.PrimaryKeyConstraint('ayah_part_id', 'order', name="ayah_part_markers_pkey")
     )
     op.add_column('ayah_parts', sa.Column('mushaf_page_id', sa.UUID(), nullable=True))
     op.add_column('ayah_parts', sa.Column('ayah_part_text_id', sa.UUID(), nullable=True))
@@ -63,14 +63,10 @@ def upgrade() -> None:
     sa_enum.create(op.get_bind(), checkfirst=True)
     op.add_column("mushafs", sa.Column("riwayah", postgresql.ENUM('HAFS', 'QALOON', name='riwayahenum'), nullable=False))
 
-    #todo после того, как переведем БД на модель v2 на heroku инстансе, можно заменить кусок ниже просто на:
-    # op.add_column('ayahs', sa.Column('mushaf_id', sa.UUID(), nullable=False))
-    #=====
     op.add_column('ayahs', sa.Column('mushaf_id', sa.UUID(), nullable=True))
     with Session(op.get_bind()) as session:
         fill_mushaf_for_existing_ayahs(session)
     op.alter_column('ayahs', 'mushaf_id', nullable=False)
-    #=====
 
     op.create_foreign_key("ayahs_to_mushafs_fk", 'ayahs', 'mushafs', ['mushaf_id'], ['id'])
 

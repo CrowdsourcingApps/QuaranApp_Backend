@@ -20,4 +20,7 @@ def get_ayah_part(
 
 
 def get_extended_ayah_parts_by_mushaf_id(db: Session, mushaf_id: uuid.UUID) -> list[AyahPart]:
-    return db.query(AyahPart).filter(AyahPart.ayah.has(mushaf_id=mushaf_id)).options(joinedload(AyahPart.ayah)).all()
+    return db.query(AyahPart).filter(AyahPart.ayah.has(mushaf_id=mushaf_id)).options(
+        joinedload(AyahPart.ayah), joinedload(AyahPart.text),
+        joinedload(AyahPart.mushaf_page), joinedload(AyahPart.markers)
+    ).all()
