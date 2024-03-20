@@ -15,7 +15,7 @@ class AyahPart(Base):
     part_number = Column(SmallInteger, nullable=False)
     ayah_part_text_id = Column(UUID(as_uuid=True), ForeignKey("ayah_part_texts.id"), nullable=True)
 
-    ayah = relationship("Ayah", back_populates="ayah_parts", lazy='joined')
+    ayah = relationship("Ayah", back_populates="ayah_parts", )
     mushaf_page = relationship("MushafPage", back_populates="ayah_parts")
-    markers = relationship("AyahPartMarker", back_populates="ayah_part", lazy='joined')
-    text = relationship("AyahPartText", back_populates="ayah_parts", lazy='joined')
+    markers = relationship("AyahPartMarker", back_populates="ayah_part",)
+    text = relationship("AyahPartText", back_populates="ayah_parts", )
