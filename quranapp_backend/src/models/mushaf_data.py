@@ -9,7 +9,7 @@ class AyahPartMarkerData(BaseModel):
     y2: int
 
 
-class AyahPartData(BaseModel):
+class AyahPartDetailData(BaseModel):
     page_number: int
     surah_number: int
     ayah_number: int
@@ -18,7 +18,19 @@ class AyahPartData(BaseModel):
     lines: list[list[AyahPartMarkerData]]
 
 
-class MushafData(BaseModel):
+class AyahPartsData(BaseModel):
     riwayah: RiwayahEnum
     publisher: PublisherEnum
-    ayah_parts_data: list[AyahPartData] = Field(alias="ayahParts")
+    ayah_parts_data: list[AyahPartDetailData] = Field(alias="ayahParts")
+
+
+class PageImagesDetailData(BaseModel):
+    page_number: int
+    light_mode_link: str
+    dark_mode_link: str | None = None
+
+
+class PageImagesData(BaseModel):
+    riwayah: RiwayahEnum
+    publisher: PublisherEnum
+    pages: list[PageImagesDetailData]
