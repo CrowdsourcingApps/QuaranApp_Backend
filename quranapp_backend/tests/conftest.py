@@ -56,8 +56,10 @@ def get_user(db_session, user, user_index):
     return user
 
 
-def pytest_unconfigure(config): # noqa
+def pytest_unconfigure(config):  # noqa
+    from sqlalchemy.orm import joinedload
     from src.dal.database import SessionLocal
+    from src.dal.models import Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker
     from src.services.users import delete_user
     global USER_1, USER_2
 
@@ -67,5 +69,32 @@ def pytest_unconfigure(config): # noqa
             delete_user(db, USER_1.id)
         if USER_2 is not None:
             delete_user(db, USER_2.id)
+
+        markers_ids_to_delete = list()
+        ayah_part_ids_to_delete = list()
+
+        ayah_parts_to_delete = db.query(AyahPart).filter(
+            AyahPart.ayah.has(Ayah.ayah_in_surah_number >= 1000)
+        ).options(joinedload(AyahPart.markers)).all()
+
+        for ayah_part in ayah_parts_to_delete:
+            markers_ids = [marker.id for marker in ayah_part.markers]
+            markers_ids_to_delete.extend(markers_ids)
+            ayah_part_ids_to_delete.append(ayah_part.id)
+
+        db.query(AyahPartMarker).filter(AyahPartMarker.id.in_(markers_ids_to_delete)).delete()
+        db.query(AyahPart).filter(AyahPart.id.in_(ayah_part_ids_to_delete)).delete()
+
+        db.query(AyahPartText).filter(AyahPartText.text.in_(
+            ["Test text data upload", "Test text data upload. Part 0",
+             "Test text data upload. Part 1", "Text that must not be created", "Test text data upload. Updated text"])
+        ).delete()
+
+        db.query(MushafPage).filter(MushafPage.index.in_([5000, 5001])).delete()
+
+        db.query(Ayah).filter(Ayah.ayah_in_surah_number >= 1000).delete()
+
+        db.commit()
+
     finally:
         db.close()
