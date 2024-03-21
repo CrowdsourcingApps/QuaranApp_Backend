@@ -91,7 +91,7 @@ class AyahPartsDataUploader:
     def _delete_outdated_markers(self) -> None:
         self.db.query(AyahPartMarker).filter(AyahPartMarker.id.in_(self.markers_ids_to_delete)).delete()
 
-    def _update_ayah_part(self, ayah_part_key: str, ayah_part_data: AyahPartData, markers_data: list) -> None:
+    def _update_ayah_part(self, ayah_part_key: str, ayah_part_data: AyahPartDetailData, markers_data: list) -> None:
         ayah_part = self.existing_ayah_parts[ayah_part_key]
         ayah_part_id = ayah_part.id
         update_data = dict()
