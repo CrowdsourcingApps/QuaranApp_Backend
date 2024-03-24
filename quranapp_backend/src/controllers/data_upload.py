@@ -18,7 +18,7 @@ def upload_ayah_parts_data(
         db: Session = db_session_dependency
 ):
     if not data_file.filename.endswith(".json"):
-        raise HTTPException(detail="Ayah parts file must have .json extension", status_code=status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(detail="Data file must have a .json extension", status_code=status.HTTP_400_BAD_REQUEST)
 
     service = mushafs_service.AyahPartsDataUploader(db=db)
     try:
@@ -38,12 +38,33 @@ def upload_page_images_data(
 ):
     if not data_file.filename.endswith(".json"):
         raise HTTPException(
-            detail="Page images file must have .json extension", status_code=status.HTTP_400_BAD_REQUEST
+            detail="Data file must have a .json extension", status_code=status.HTTP_400_BAD_REQUEST
         )
 
     service = mushafs_service.PageImagesDataUploader(db=db)
     try:
         service.save_data_from_page_images_file(data_file.file)
+    except ValidationError as e:
+        raise HTTPException(detail=e.errors(), status_code=status.HTTP_400_BAD_REQUEST)
+    except mushafs_service.DataUploadException as e:
+        raise HTTPException(detail=str(e), status_code=status.HTTP_400_BAD_REQUEST)
+    finally:
+        data_file.file.close()
+
+
+@data_upload_router.post("/surahs-in-mushaf")
+def upload_surahs_in_mushaf_data(
+        data_file: UploadFile,
+        db: Session = db_session_dependency
+):
+    if not data_file.filename.endswith(".json"):
+        raise HTTPException(
+            detail="Data file must have a .json extension", status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    service = mushafs_service.SurahsInMushafDataUploader(db=db)
+    try:
+        service.save_data_from_surahs_in_mushaf_file(data_file.file)
     except ValidationError as e:
         raise HTTPException(detail=e.errors(), status_code=status.HTTP_400_BAD_REQUEST)
     except mushafs_service.DataUploadException as e:

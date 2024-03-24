@@ -7,10 +7,11 @@ from sqlalchemy.orm import Session
 
 from src.dal.database import Base
 from src.dal.enums import RiwayahEnum, PublisherEnum
-from src.dal.models import Mushaf, Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker
+from src.dal.models import Mushaf, Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, SurahInMushaf
 from src.models.ayah_part_marker import AyahPartMarker as AyahPartMarkerBase
 from src.models.mushaf_data import (
-    AyahPartsData, AyahPartDetailData, AyahPartMarkerData, PageImagesData, PageImagesDetailData
+    AyahPartsData, AyahPartDetailData, AyahPartMarkerData, PageImagesData, PageImagesDetailData,
+    SurahsInMushafData, SurahInMushafDetailData
 )
 from src.services import (
     surahs as surahs_service,
@@ -31,6 +32,13 @@ def create_mushaf(db: Session, riwayah: RiwayahEnum, publisher: PublisherEnum) -
 
 def get_mushaf_if_exists(db: Session, riwayah: RiwayahEnum, publisher: PublisherEnum) -> Mushaf | None:
     return db.query(Mushaf).filter_by(riwayah=riwayah, publisher=publisher).first()
+
+
+def get_or_create_mushaf(db: Session, riwayah: RiwayahEnum, publisher: PublisherEnum) -> Mushaf:
+    mushaf = get_mushaf_if_exists(db, riwayah, publisher)
+    if not mushaf:
+        mushaf = create_mushaf(db, riwayah, publisher)
+    return mushaf
 
 
 class DataUploadException(Exception):
@@ -254,9 +262,7 @@ class AyahPartsDataUploader:
         # ValidationError, который здесь может возникнуть, обрабатывается в самой функции эндпоинта
         validated_ayah_parts_data = AyahPartsData(**uploaded_data)
 
-        mushaf = get_mushaf_if_exists(self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher)
-        if not mushaf:
-            mushaf = create_mushaf(self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher)
+        mushaf = get_or_create_mushaf(self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher)
 
         self._fill_data_for_existing_objects(mushaf_id=mushaf.id)
 
@@ -337,10 +343,106 @@ class PageImagesDataUploader:
 
         validated_page_images_data = PageImagesData(**uploaded_data)
 
-        mushaf = get_mushaf_if_exists(self.db, validated_page_images_data.riwayah, validated_page_images_data.publisher)
-        if not mushaf:
-            mushaf = create_mushaf(self.db, validated_page_images_data.riwayah, validated_page_images_data.publisher)
+        mushaf = get_or_create_mushaf(self.db, validated_page_images_data.riwayah, validated_page_images_data.publisher)
 
         self._fill_existing_mushaf_pages(mushaf_id=mushaf.id)
 
         self._create_objects_from_page_images_data(mushaf_id=mushaf.id, data=validated_page_images_data.pages)
+
+
+class SurahsInMushafDataUploader:
+    def __init__(self, db: Session):
+        self.db = db
+        self.existing_surahs_numbers = set([surah.id for surah in surahs_service.get_all_surahs(db)])
+        self.existing_surahs_in_mushaf: dict[int, SurahInMushaf] = dict()
+        self.mushaf_pages_to_ids_mapping = dict()
+
+        self.processed_surahs = set()
+
+    def _fill_ids_for_existing_mushaf_pages(self, mushaf_id: uuid.UUID) -> None:
+        for mushaf_page in mushaf_pages_service.get_pages_by_mushaf_id(self.db, mushaf_id):
+            self.mushaf_pages_to_ids_mapping[mushaf_page.index] = mushaf_page.id
+
+    def _fill_existing_surahs_in_mushaf(self, mushaf_id: uuid.UUID) -> None:
+        for surah_in_mushaf in surahs_service.get_surahs_in_mushaf(self.db, mushaf_id):
+            self.existing_surahs_in_mushaf[surah_in_mushaf.surah_number] = surah_in_mushaf
+
+    def _fill_data_for_existing_objects(self, mushaf_id: uuid.UUID) -> None:
+        self._fill_ids_for_existing_mushaf_pages(mushaf_id=mushaf_id)
+        self._fill_existing_surahs_in_mushaf(mushaf_id=mushaf_id)
+
+    def _bulk_create_objects(self, objects_data: list[dict], db_model: Base) -> list[Base]:
+        db_objects = self.db.scalars(
+            insert(db_model).returning(db_model),
+            objects_data
+        )
+        return list(db_objects)
+
+    def _validate_surah_number(self, surah_number: int):
+        if surah_number not in self.existing_surahs_numbers:
+            raise DataUploadException(f"Surah with number '{surah_number}' does not exist")
+
+    def _update_surah_in_mushaf(self, surah_number: int, page_id: uuid.UUID) -> None:
+        surah_in_mushaf = self.existing_surahs_in_mushaf[surah_number]
+        if surah_in_mushaf.first_page_id != page_id:
+            surah_in_mushaf.first_page_id = page_id
+
+    def _create_objects_from_surahs_in_mushaf_data(
+            self, mushaf_id: uuid.UUID, data: list[SurahInMushafDetailData]
+    ) -> None:
+        surahs_in_mushaf_data = list()
+        mushaf_pages_data = list()
+
+        for uploaded_surah_in_mushaf_data in data:
+            surah_number = uploaded_surah_in_mushaf_data.surah_number
+
+            if surah_number in self.processed_surahs:
+                raise DataUploadException(f"Data is duplicated for the following surah: {surah_number}")
+            self.processed_surahs.add(surah_number)
+
+            self._validate_surah_number(surah_number)
+
+            page_number = uploaded_surah_in_mushaf_data.page_number
+            if page_number in self.mushaf_pages_to_ids_mapping:
+                mushaf_page_id = self.mushaf_pages_to_ids_mapping[page_number]
+            else:
+                mushaf_page_id = uuid.uuid4()
+                mushaf_pages_data.append({"id": mushaf_page_id, "index": page_number, "mushaf_id": mushaf_id})
+                self.mushaf_pages_to_ids_mapping[page_number] = mushaf_page_id
+
+            if surah_number in self.existing_surahs_in_mushaf:
+                self._update_surah_in_mushaf(surah_number, mushaf_page_id)
+            else:
+                surahs_in_mushaf_data.append({
+                    "first_page_id": mushaf_page_id,
+                    "surah_number": surah_number
+                })
+
+        if mushaf_pages_data:
+            self._bulk_create_objects(mushaf_pages_data, MushafPage)
+
+        if surahs_in_mushaf_data:
+            self._bulk_create_objects(surahs_in_mushaf_data, SurahInMushaf)
+
+        self.db.commit()
+
+    def save_data_from_surahs_in_mushaf_file(self, file: SpooledTemporaryFile) -> None:
+        try:
+            uploaded_data = json.load(file)
+        except json.JSONDecodeError as e:
+            raise DataUploadException(f"Error in file formatting - not valid json. Details: {e.args}")
+
+        if not isinstance(uploaded_data, dict):
+            raise DataUploadException("Unexpected file structure. Expected: {...}")
+
+        validated_surahs_in_mushaf_data = SurahsInMushafData(**uploaded_data)
+
+        mushaf = get_or_create_mushaf(
+            self.db, validated_surahs_in_mushaf_data.riwayah, validated_surahs_in_mushaf_data.publisher
+        )
+
+        self._fill_data_for_existing_objects(mushaf_id=mushaf.id)
+
+        self._create_objects_from_surahs_in_mushaf_data(
+            mushaf_id=mushaf.id, data=validated_surahs_in_mushaf_data.surahs
+        )
