@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, Enum
+from sqlalchemy import Column, String, Enum, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -15,3 +15,7 @@ class Reciter(Base):
     riwayah = Column(Enum(RiwayahEnum), nullable=False)
 
     audios = relationship("ReciterAudio", back_populates="reciter")
+
+    __table_args__ = (
+        Index('ix_reciters_name_riwayah', 'name', 'riwayah', unique=True),
+    )
