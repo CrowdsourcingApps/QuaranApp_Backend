@@ -52,12 +52,10 @@ def _map_reciter_audio(text: AyahPartText, mushaf: Mushaf) -> str | None: # noqa
     if text is None:
         return None
 
-    if len(text.reciter_audios) < 1:
+    audios = list(filter(lambda x: x.reciter.riwayah == mushaf.riwayah, text.reciter_audios))
+
+    if len(audios) < 1:
         return None
-    
-    audio = text.reciter_audios[0]
 
-    if mushaf.riwayah == audio.reciter.riwayah:
-        return audio.audio_link
-
-    return None
+    audio = audios[0]
+    return audio.audio_link
