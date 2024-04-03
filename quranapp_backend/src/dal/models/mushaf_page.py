@@ -17,3 +17,4 @@ class MushafPage(Base):
 
     mushaf = relationship("Mushaf", back_populates="pages")
     ayah_parts = relationship("AyahPart", back_populates="mushaf_page")
+    surahs_in_mushaf = relationship("SurahInMushaf", back_populates="mushaf_page")

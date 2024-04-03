@@ -10,6 +10,7 @@ class Riwayah {
 class MushafPublisher {
     <<enumeration>>
     Madina
+    Jawamee
 }
 class User {
     String: id
@@ -50,7 +51,7 @@ class AyahPart {
     Uuid: ayahPartTextId
 }
 class SurahInMushaf {
-    Uuid: firstPageInMushafId
+    Uuid: firstPageId
     Int: surahNumber
 }
 class Recording {
@@ -67,6 +68,7 @@ class SharedRecording {
     Date: createdAt
 }
 class AyahPartMarkers {
+    Uuid: id
     Uuid: ayahPartId
     Int: orderId
     Int: x
@@ -88,20 +90,21 @@ class AyahPartText {
     Uuid: id
     String: text
 }
-Recording *-- AyahPart: consist of
 User -- Recording: creates
-AyahPart --> Ayah
-AyahPart --> MushafPage
-AyahPart --> AyahPartText
-Ayah --> Mushaf
-Mushaf --> Riwayah
-Mushaf --> MushafPublisher
-SharedRecording --> Recording
-AyahPartMarkers --> AyahPart
-MushafPage --> Mushaf
-SurahInMushaf --> MushafPage
-SurahInMushaf --> Surah
-Reciter --> Riwayah
-ReciterAudio --> Reciter
-ReciterAudio --> AyahPartText
-Ayah --> Surah
+User --> SharedRecording
+SharedRecording <-- Recording
+AyahPart -- Recording: is range of
+AyahPart -- AyahPartMarkers: belongs to
+AyahPart -- Ayah: is part of
+AyahPart -- MushafPage: belongs to
+AyahPart -- AyahPartText: refers to
+Ayah -- Mushaf: belongs to
+Ayah -- Surah: belongs to
+MushafPage -- Mushaf: belongs to
+MushafPage --> SurahInMushaf
+SurahInMushaf <-- Surah
+ReciterAudio -- Reciter: belongs to
+AyahPartText -- ReciterAudio: refers to
+Reciter -- Riwayah
+Mushaf -- Riwayah
+Mushaf -- MushafPublisher

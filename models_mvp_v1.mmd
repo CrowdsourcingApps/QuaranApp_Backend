@@ -1,5 +1,5 @@
 ---
-title: Quaranize Models
+title: Quarapp MVP-1 DAL Models
 ---
 classDiagram
 class Riwayah {
@@ -37,8 +37,9 @@ class SharedRecording {
     Uuid: recordingId
     Date: createdAt
 }
-Recording *-- AyahPart: consist of
 User -- Recording: creates
-AyahPart --> Ayah
-Ayah --> Riwayah
-SharedRecording --> Recording
+User --> SharedRecording
+SharedRecording <-- Recording
+AyahPart -- Recording: is range of
+AyahPart -- Ayah: is part of
+Ayah -- Riwayah

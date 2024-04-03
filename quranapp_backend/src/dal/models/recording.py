@@ -19,6 +19,7 @@ class Recording(Base):
     audio_url = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
     is_deleted = Column(Boolean, nullable=True)
+
     user = relationship("User", back_populates="recordings")
     start = relationship("AyahPart", foreign_keys=[start_id])
     end = relationship("AyahPart", foreign_keys=[end_id])

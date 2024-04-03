@@ -38,9 +38,11 @@ class SharedRecording(BaseModel):
 class DetailedRecording(BaseModel):
     id: uuid.UUID
     user_alias: str
+    is_my_recording: bool
     riwayah: RiwayahEnum
     publisher: PublisherEnum
     start: AyahPartDetailed
     end: AyahPartDetailed
+    range_string: str
     created_at: datetime
     audio_url: str

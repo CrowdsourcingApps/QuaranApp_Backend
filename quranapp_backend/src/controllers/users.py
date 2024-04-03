@@ -33,8 +33,8 @@ def check_if_alias_exists(
         db: Session = db_session_dependency
 ) -> ApiMessageResponse:
     if users_service.check_if_alias_exists(db, user_alias):
-        return ApiMessageResponse(message='Alias exists', is_success=True)
-    return ApiMessageResponse(message='Alias does not exist', is_success=False)
+        return ApiMessageResponse(message='Alias exists', is_success=False)
+    return ApiMessageResponse(message='Alias does not exist', is_success=True)
 
 
 @user_router.post("/create")
