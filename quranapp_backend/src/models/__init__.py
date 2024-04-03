@@ -10,3 +10,4 @@ from src.models.mushaf_data import (
 )
 from src.models.mushaf_page import MushafPage, MushafPageDetails
 from src.models.ayah_part_marker import AyahPartMarker
+from src.models.range import PagesRangeRequest, RangeStartAndEndPages
