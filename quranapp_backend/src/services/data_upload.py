@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from src.dal.database import Base
 from src.dal.models import Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, SurahInMushaf
-from src.models.ayah_part_marker import AyahPartMarker as AyahPartMarkerBase
+from src.models.ayah_part_marker import AyahPartMarkerBase
 from src.models.mushaf_data import (
     AyahPartsData, AyahPartDetailData, AyahPartMarkerData, PageImagesData, PageImagesDetailData,
     SurahsInMushafData, SurahInMushafDetailData
