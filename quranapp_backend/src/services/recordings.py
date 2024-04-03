@@ -17,6 +17,17 @@ def create_recording(
     return db_recording
 
 
+def get_range_string(start: AyahPart, end: AyahPart):
+    start_surah_name = start.ayah.surah.title_eng
+    if start.ayah.surah_number == end.ayah.surah_number:
+        range_string = f'{start_surah_name} {start.ayah.ayah_in_surah_number}-{end.ayah.ayah_in_surah_number}'
+    else:
+        end_surah_name = start.ayah.surah.title_eng
+        range_string = f'{start_surah_name} {start.ayah.ayah_in_surah_number} - {end_surah_name} {end.ayah.ayah_in_surah_number}'
+
+    return range_string
+
+
 def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
     recordings = (db.query(Recording)
                   .filter_by(user_id=user_id)
@@ -26,10 +37,12 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
     for recording in recordings:
         start = recording.start
         end = recording.end
+        range_string = get_range_string(start, end)
 
         result.append(DetailedRecording(
             id=recording.id,
             user_alias=recording.user.alias,
+            is_my_recording=True,
             riwayah=start.ayah.mushaf.riwayah,
             publisher=start.ayah.mushaf.publisher,
             start=AyahPartDetailed(
@@ -40,6 +53,7 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
                 surah_number=end.ayah.surah_number,
                 ayah_in_surah_number=end.ayah.ayah_in_surah_number,
                 part_number=end.part_number),
+            range_string=range_string,
             created_at=recording.created_at,
             audio_url=recording.audio_url))
 
@@ -52,10 +66,12 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
     for shared in shared_recordings:
         start = shared.recording.start
         end = shared.recording.end
+        range_string = get_range_string(start, end)
 
         result.append(DetailedRecording(
             id=shared.recording.id,
             user_alias=shared.recording.user.alias,
+            is_my_recording=False,
             riwayah=start.ayah.mushaf.riwayah,
             publisher=start.ayah.mushaf.publisher,
             start=AyahPartDetailed(
@@ -66,6 +82,7 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
                 surah_number=end.ayah.surah_number,
                 ayah_in_surah_number=end.ayah.ayah_in_surah_number,
                 part_number=end.part_number),
+            range_string=range_string,
             created_at=shared.recording.created_at,
             audio_url=shared.recording.audio_url))
 
