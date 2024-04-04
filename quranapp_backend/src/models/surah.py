@@ -13,4 +13,7 @@ class Surah(BaseModel):
 
 class SurahInMushaf(BaseModel):
     first_page_id: uuid.UUID
+    first_page_index: int
     surah_number: int
+    surah_title: str
+    ayahs_in_surah: list[int]
