@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, SmallInteger, ForeignKey, Integer
+from sqlalchemy import Column, SmallInteger, ForeignKey, Integer, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -17,3 +17,8 @@ class Ayah(Base):
     mushaf = relationship("Mushaf", back_populates="ayahs")
     ayah_parts = relationship("AyahPart", back_populates="ayah")
     surah = relationship("Surah", back_populates="ayahs")
+
+    __table_args__ = (
+        Index('ix_ayahs_surah_number', 'surah_number'),
+        Index('ix_ayahs_ayah_in_surah_number', 'ayah_in_surah_number'),
+    )
