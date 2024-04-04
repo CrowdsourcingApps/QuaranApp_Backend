@@ -3,8 +3,7 @@ import uuid
 from pydantic import BaseModel, ConfigDict
 
 
-class AyahPartMarker(BaseModel):
-    id: uuid.UUID
+class AyahPartMarkerBase(BaseModel):
     order: int
     x: int
     y1: int
@@ -12,3 +11,7 @@ class AyahPartMarker(BaseModel):
     is_new_line: bool
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class AyahPartMarker(AyahPartMarkerBase):
+    id: uuid.UUID

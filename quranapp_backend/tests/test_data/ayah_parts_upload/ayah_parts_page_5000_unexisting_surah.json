@@ -1,0 +1,38 @@
+{
+    "riwayah": "Qaloon",
+    "publisher": "Madina",
+    "ayahParts": [
+        {
+            "page_number": 5000,
+            "surah_number": 1,
+            "ayah_number": 2000,
+            "part_number": 0,
+            "text": "Text that must not be created",
+            "lines": [
+                [
+                    {"x": 487, "y1": 379, "y2": 315},
+                    {"x": 427, "y1": 315, "y2": 379},
+                    {"x": 389, "y1": 315, "y2": 379},
+                    {"x": 316, "y1": 315, "y2": 379},
+                    {"x": 232, "y1": 379, "y2": 315}
+                ]
+            ]
+        },
+        {
+            "page_number": 5000,
+            "surah_number": 8000,
+            "ayah_number": 2001,
+            "part_number": 0,
+            "text": "Text that must not be created",
+            "lines": [
+                [
+                    {"x": 568, "y1": 451, "y2": 388},
+                    {"x": 485, "y1": 388, "y2": 451},
+                    {"x": 447, "y1": 388, "y2": 451},
+                    {"x": 393, "y1": 388, "y2": 451},
+                    {"x": 287, "y1": 451, "y2": 388}
+                ]
+            ]
+        }
+    ]
+}
