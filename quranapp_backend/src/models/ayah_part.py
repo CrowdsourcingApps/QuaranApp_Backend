@@ -26,6 +26,7 @@ class AyahPart(BaseModel):
 
 class MushafPageAyahPart(AyahPartBase):
     id: uuid.UUID
+    surah_title: str
     text: str | NoneType
     text_id: uuid.UUID | NoneType
     audio_link: str | NoneType
