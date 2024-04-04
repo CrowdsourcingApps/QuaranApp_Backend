@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, Index
 from sqlalchemy.orm import relationship
 
 from src.dal.database import Base
@@ -12,5 +12,10 @@ class User(Base):
     alias = Column(String, default=f'user{uuid.uuid4().hex}', unique=True, nullable=False)
     name = Column(String, nullable=False)
     surname = Column(String, nullable=False)
+
     recordings = relationship("Recording", back_populates="user")
     tokens = relationship("Token", back_populates="user")
+
+    __table_args__ = (
+        Index('ix_users_alias', 'alias'),
+    )

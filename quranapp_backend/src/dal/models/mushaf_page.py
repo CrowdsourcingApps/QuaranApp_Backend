@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import Column, String, SmallInteger, ForeignKey
+from sqlalchemy import Column, String, SmallInteger, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -18,3 +18,7 @@ class MushafPage(Base):
     mushaf = relationship("Mushaf", back_populates="pages")
     ayah_parts = relationship("AyahPart", back_populates="mushaf_page")
     surahs_in_mushaf = relationship("SurahInMushaf", back_populates="mushaf_page")
+
+    __table_args__ = (
+        Index('ix_mushaf_pages_mushaf_id', 'mushaf_id'),
+    )
