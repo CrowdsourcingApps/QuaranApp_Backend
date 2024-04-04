@@ -16,7 +16,3 @@ class Mushaf(Base):
 
     ayahs = relationship("Ayah", back_populates="mushaf")
     pages = relationship("MushafPage", back_populates="mushaf")
-
-    __table_args__ = (
-        Index('ix_mushafs_publisher_riwayah', 'publisher', 'riwayah', unique=True),
-    )

@@ -19,7 +19,3 @@ class AyahPart(Base):
     mushaf_page = relationship("MushafPage", back_populates="ayah_parts")
     markers = relationship("AyahPartMarker", back_populates="ayah_part",)
     text = relationship("AyahPartText", back_populates="ayah_parts", )
-
-    __table_args__ = (
-        Index('ix_ayah_parts_part_number', 'part_number'),
-    )
