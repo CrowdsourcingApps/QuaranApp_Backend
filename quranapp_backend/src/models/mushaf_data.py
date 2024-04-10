@@ -15,12 +15,14 @@ class AyahPartDetailData(BaseModel):
     ayah_number: int
     part_number: int = 0
     text: str | None = None
+    audio_link: str | None = None
     lines: list[list[AyahPartMarkerData]]
 
 
 class AyahPartsData(BaseModel):
     riwayah: RiwayahEnum
     publisher: PublisherEnum
+    reciter: str | None = None
     ayah_parts_data: list[AyahPartDetailData] = Field(alias="ayahParts")
 
 

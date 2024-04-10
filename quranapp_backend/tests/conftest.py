@@ -69,7 +69,9 @@ def get_user(db_session, user, user_index):
 def pytest_unconfigure(config):  # noqa
     from sqlalchemy.orm import joinedload
     from src.dal.database import SessionLocal
-    from src.dal.models import Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, Surah, SurahInMushaf
+    from src.dal.models import (
+        Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, Surah, SurahInMushaf, Reciter, ReciterAudio
+    )
     from src.services.users import delete_user
     global USER_1, USER_2
 
@@ -95,9 +97,14 @@ def pytest_unconfigure(config):  # noqa
         db.query(AyahPartMarker).filter(AyahPartMarker.id.in_(markers_ids_to_delete)).delete()
         db.query(AyahPart).filter(AyahPart.id.in_(ayah_part_ids_to_delete)).delete()
 
+        test_reciter: Reciter = db.query(Reciter).filter_by(name="Test reciter name").first()
+        db.query(ReciterAudio).filter_by(reciter_id=test_reciter.id).delete()
+        db.delete(test_reciter)
+
         db.query(AyahPartText).filter(AyahPartText.text.in_(
             ["Test text data upload", "Test text data upload. Part 0",
-             "Test text data upload. Part 1", "Text that must not be created", "Test text data upload. Updated text"])
+             "Test text data upload. Part 1", "Text that must not be created", "Test text data upload. Updated text",
+             "Test text data upload. Text 0", "Test text data upload. Text 2",])
         ).delete()
 
         db.query(SurahInMushaf).filter(SurahInMushaf.surah_number >= 500).delete()
