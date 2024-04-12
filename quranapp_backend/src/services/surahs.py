@@ -21,4 +21,4 @@ def get_surahs_in_mushaf(db: Session, mushaf_id: uuid.UUID):
 
     print(surahs_in_mushaf)
 
-    return surahs_in_mushaf_mapper.map_surahs_in_mushaf(surahs_in_mushaf)
+    return surahs_in_mushaf_mapper.map_surahs_in_mushaf(mushaf_id, surahs_in_mushaf)

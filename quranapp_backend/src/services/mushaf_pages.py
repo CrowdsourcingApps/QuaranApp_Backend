@@ -44,7 +44,7 @@ def get_first_and_last_pages_for_range(db: Session, mushaf_id: uuid.UUID, reques
     if not start_ayah_part or not end_ayah_part:
         raise HTTPException(detail="Ayahs not found", status_code=status.HTTP_404_NOT_FOUND)
 
-    if not start_ayah_part.mushaf_page.index or not end_ayah_part.mushaf_page.index:
+    if not start_ayah_part.mushaf_page or not end_ayah_part.mushaf_page:
         raise HTTPException(detail="Page for Ayah not found", status_code=status.HTTP_404_NOT_FOUND)
 
     return RangeStartAndEndPages(
