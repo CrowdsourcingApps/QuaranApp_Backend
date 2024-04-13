@@ -10,6 +10,7 @@ def map_to_page_details(page_id: uuid.UUID, ayah_parts: list[AyahPartDal]) -> Mu
     for ayah_part in ayah_parts:
         mapped_ayah_parts.append(MushafPageAyahPart(
             id=ayah_part.id,
+            surah_title=ayah_part.ayah.surah.title_eng,
             part_number=ayah_part.part_number,
             surah_number=ayah_part.ayah.surah_number,
             ayah_in_surah_number=ayah_part.ayah.ayah_in_surah_number,
