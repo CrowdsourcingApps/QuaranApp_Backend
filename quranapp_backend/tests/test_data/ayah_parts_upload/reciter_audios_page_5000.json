@@ -1,6 +1,7 @@
 {
     "riwayah": "Qaloon",
     "publisher": "Madina",
+    "reciter": "Test reciter name",
     "ayahParts": [
         {
             "page_number": 5000,
@@ -8,6 +9,7 @@
             "ayah_number": 1000,
             "part_number": 0,
             "text": "Test text data upload. Text 0",
+            "audio_link": "https://test-link0.com",
             "lines": [
                 [
                     {"x": 487, "y1": 379, "y2": 315},
@@ -56,6 +58,7 @@
             "ayah_number": 1002,
             "part_number": 0,
             "text": "Test text data upload. Text 2",
+            "audio_link": "https://test-link2.com",
             "lines": [
                 [
                     {"x": 238, "y1": 451, "y2": 388},

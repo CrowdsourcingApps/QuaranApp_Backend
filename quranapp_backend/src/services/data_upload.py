@@ -6,7 +6,7 @@ from sqlalchemy import insert, update
 from sqlalchemy.orm import Session
 
 from src.dal.database import Base
-from src.dal.models import Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, SurahInMushaf
+from src.dal.models import Ayah, AyahPart, AyahPartText, MushafPage, AyahPartMarker, SurahInMushaf, ReciterAudio
 from src.models.ayah_part_marker import AyahPartMarkerBase
 from src.models.mushaf_data import (
     AyahPartsData, AyahPartDetailData, AyahPartMarkerData, PageImagesData, PageImagesDetailData,
@@ -18,7 +18,8 @@ from src.services import (
     mushaf_pages as mushaf_pages_service,
     ayahs as ayahs_service,
     ayah_parts as ayah_parts_service,
-    mushafs as mushafs_service
+    mushafs as mushafs_service,
+    reciters as reciters_service
 )
 
 
@@ -32,6 +33,7 @@ class AyahPartsDataUploader:
         self.db = db
         self.existing_surahs_numbers = set([surah.id for surah in surahs_service.get_all_surahs(db)])
         self.existing_ayah_parts: dict[str, AyahPart] = dict()
+        self.reciter_audios_to_text_ids_mapping: dict[uuid.UUID, ReciterAudio] = dict()
         self.ayah_parts_texts_to_ids_mapping = {
             ayah_part_text.text: ayah_part_text.id
             for ayah_part_text in ayah_part_texts_service.get_all_ayah_part_texts(db)
@@ -42,6 +44,7 @@ class AyahPartsDataUploader:
         self.processed_ayah_part_keys = set()
 
         self.ayah_parts_to_update = list()
+        self.reciter_audios_to_update = list()
         self.markers_ids_to_delete = list()
 
     def _fill_ids_for_existing_mushaf_pages(self, mushaf_id: uuid.UUID) -> None:
@@ -58,12 +61,16 @@ class AyahPartsDataUploader:
                              f"{ayah_part.part_number}")
             self.existing_ayah_parts[ayah_part_key] = ayah_part
 
-    def _fill_data_for_existing_objects(self, mushaf_id: uuid.UUID) -> None:
+    def _fill_existing_reciter_audios(self, reciter_id: uuid.UUID) -> None:
+        for reciter_audio in reciters_service.get_reciter_audios_by_reciter_id(self.db, reciter_id):
+            self.reciter_audios_to_text_ids_mapping[reciter_audio.ayah_part_text_id] = reciter_audio
+
+    def _fill_mushaf_related_data(self, mushaf_id: uuid.UUID) -> None:
         self._fill_ids_for_existing_ayahs(mushaf_id=mushaf_id)
         self._fill_ids_for_existing_mushaf_pages(mushaf_id=mushaf_id)
         self._fill_existing_ayah_parts(mushaf_id=mushaf_id)
 
-    def _bulk_create_objects(self, objects_data: list[dict], db_model: Base) -> list[Base]:
+    def _bulk_create_objects(self, objects_data: list[dict], db_model: type(Base)) -> list[Base]:
         """Создает и вовзращает объекты выбранной модели на основе передаваемых данных"""
         db_objects = self.db.scalars(
             insert(db_model).returning(db_model),
@@ -71,10 +78,10 @@ class AyahPartsDataUploader:
         )
         return list(db_objects)
 
-    def _bulk_update_ayah_parts(self) -> None:
+    def _bulk_update_objects(self, update_data: list[dict], db_model: type(Base)) -> None:
         self.db.execute(
-            update(AyahPart),
-            self.ayah_parts_to_update
+            update(db_model),
+            update_data
         )
 
     def _delete_outdated_markers(self) -> None:
@@ -118,6 +125,14 @@ class AyahPartsDataUploader:
             self.markers_ids_to_delete.extend([marker.id for marker in ayah_part.markers])
             markers_data.extend(uploaded_markers_data)
 
+    def _update_reciter_audio(self, text_id: uuid.UUID, uploaded_audio_link: str) -> None:
+        reciter_audio = self.reciter_audios_to_text_ids_mapping[text_id]
+        if reciter_audio.audio_link != uploaded_audio_link:
+            self.reciter_audios_to_update.append({
+                "reciter_id": reciter_audio.reciter_id, "ayah_part_text_id": text_id,
+                "audio_link": uploaded_audio_link
+            })
+
     def _form_data_for_ayah_part_markers(
             self, markers: list[list[AyahPartMarkerData]], ayah_part_id: uuid.UUID
     ) -> list[dict]:
@@ -137,12 +152,15 @@ class AyahPartsDataUploader:
         if surah_number not in self.existing_surahs_numbers:
             raise DataUploadException(f"Surah with number '{surah_number}' does not exist")
 
-    def _create_objects_from_ayah_parts_data(self, mushaf_id: uuid.UUID, data: list[AyahPartDetailData]) -> None:
+    def _create_objects_from_ayah_parts_data(
+            self, mushaf_id: uuid.UUID, reciter_id: uuid.UUID | None, data: list[AyahPartDetailData]
+    ) -> None:
         ayahs_data = list()
         ayah_part_texts_data = list()
         mushaf_pages_data = list()
         ayah_parts_data = list()
         markers_data = list()
+        reciter_audios_data = list()
 
         for uploaded_ayah_part_data in data:
 
@@ -209,6 +227,25 @@ class AyahPartsDataUploader:
                     self._form_data_for_ayah_part_markers(uploaded_ayah_part_data.lines, ayah_part_id)
                 )
 
+            # Добавление данных по ReciterAudio | обновление ReciterAudio
+            reciter_audio_link = uploaded_ayah_part_data.audio_link
+            if reciter_id and reciter_audio_link:
+                if not ayah_part_text_id:
+                    raise DataUploadException(
+                        f"To load audio link for ayah part, text is required. Ayah part that caused the error: "
+                        f"surah number = {surah_number}, ayah number = {ayah_in_surah_number}, "
+                        f"part number = {ayah_part_number}"
+                    )
+
+                if ayah_part_text_id in self.reciter_audios_to_text_ids_mapping:
+                    self._update_reciter_audio(ayah_part_text_id, reciter_audio_link)
+
+                else:
+                    reciter_audios_data.append({
+                        "reciter_id": reciter_id, "ayah_part_text_id": ayah_part_text_id,
+                        "audio_link": reciter_audio_link
+                    })
+
         if ayahs_data:
             self._bulk_create_objects(ayahs_data, Ayah)
 
@@ -227,7 +264,11 @@ class AyahPartsDataUploader:
         if markers_data:
             self._bulk_create_objects(markers_data, AyahPartMarker)
 
-        self._bulk_update_ayah_parts()
+        if reciter_audios_data:
+            self._bulk_create_objects(reciter_audios_data, ReciterAudio)
+
+        self._bulk_update_objects(self.ayah_parts_to_update, AyahPart)
+        self._bulk_update_objects(self.reciter_audios_to_update, ReciterAudio)
 
         self.db.commit()
 
@@ -247,9 +288,22 @@ class AyahPartsDataUploader:
             self.db, validated_ayah_parts_data.riwayah, validated_ayah_parts_data.publisher
         )
 
-        self._fill_data_for_existing_objects(mushaf_id=mushaf.id)
+        # Если нужно будет загружать аудио нескольких ресайтеров для одного риваята - то лучше сделать для этого
+        # отдельный эндпоинт, и отдельные файлы, чтобы избежать проблем синхронизации данных
+        # по ая партам для разных ресайтеров
+        reciter_id = None
+        if validated_ayah_parts_data.reciter:
+            reciter = reciters_service.get_or_create_reciter(
+                self.db, validated_ayah_parts_data.reciter, validated_ayah_parts_data.riwayah
+            )
+            reciter_id = reciter.id
+            self._fill_existing_reciter_audios(reciter_id=reciter_id)
 
-        self._create_objects_from_ayah_parts_data(mushaf_id=mushaf.id, data=validated_ayah_parts_data.ayah_parts_data)
+        self._fill_mushaf_related_data(mushaf_id=mushaf.id)
+
+        self._create_objects_from_ayah_parts_data(
+            mushaf_id=mushaf.id, reciter_id=reciter_id, data=validated_ayah_parts_data.ayah_parts_data
+        )
 
 
 class PageImagesDataUploader:
