@@ -22,15 +22,16 @@ def get_user_by_alias(db: Session, alias: str) -> UserModel | None:
     return user
 
 
-def find_user_by_alias(db: Session, alias: str) -> list[type(UserModel)]:
+def find_user_by_alias(db: Session, alias: str, user_id: str, count: int = 5) -> list[type(UserModel)]:
     prefix = alias.strip().lower()
     query = db.query(User).filter(
         or_(
             User.alias.like(text(':prefix')),  # noqa
             User.name.like(text(':prefix')),  # noqa
             User.surname.like(text(':prefix'))  # noqa
-        )
-    )
+        ),
+        User.id != user_id
+    ).limit(count)
 
     result = query.params(prefix=f'{prefix}%').all()
     return result

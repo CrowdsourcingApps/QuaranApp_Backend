@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from sqlalchemy.orm import Session
 
-from src.controllers.dependencies import db_session_dependency, api_key_dependency
+from src.controllers.dependencies import db_session_dependency, api_key_dependency, jwt_dependency
 from src.models import UserModel, ApiMessageResponse
 from src.services import users_service
 
@@ -22,8 +22,8 @@ def get_user(user_id: str, db: Session = db_session_dependency) -> UserModel:
 
 
 @user_router.get("/find/{user_alias}", response_model=list[UserModel])
-def find_user(user_alias: str, db: Session = db_session_dependency) -> list[UserModel]:
-    users = users_service.find_user_by_alias(db, user_alias)
+def find_user(user_alias: str, user_id: str = jwt_dependency, db: Session = db_session_dependency) -> list[UserModel]:
+    users = users_service.find_user_by_alias(db, user_alias, user_id)
     return users
 
 
