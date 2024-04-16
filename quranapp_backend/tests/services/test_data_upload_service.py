@@ -114,15 +114,23 @@ class TestAyahPartsDataUploader:
         new_reciter_audios_count = db_session.query(ReciterAudio).count()
         assert new_reciter_audios_count == reciter_audios_count + 2
 
+        ayah_part = db_session.query(AyahPart).filter(
+            AyahPart.text.has(text="Test text data upload. Text 0")
+        ).first()
+
         reciter_audio = db_session.query(ReciterAudio).filter(
-            ReciterAudio.text.has(text="Test text data upload. Text 0")
+            ReciterAudio.ayah_part_id == ayah_part.id
         ).first()
 
         assert reciter_audio.audio_link == "https://test-link0.com"
 
     def test_reciter_audios_update(self, db_session):
+        ayah_part = db_session.query(AyahPart).filter(
+            AyahPart.text.has(text="Test text data upload. Text 2")
+        ).first()
+
         reciter_audio = db_session.query(ReciterAudio).filter(
-            ReciterAudio.text.has(text="Test text data upload. Text 2")
+            ReciterAudio.ayah_part_id == ayah_part.id
         ).first()
 
         assert reciter_audio.audio_link == "https://test-link2.com"
@@ -133,12 +141,6 @@ class TestAyahPartsDataUploader:
 
         db_session.refresh(reciter_audio)
         assert reciter_audio.audio_link == "https://test-link2_updated.com"
-
-    def test_data_upload_reciter_audios_missing_text(self, db_session):
-        ayah_parts_data_uploader = data_upload_service.AyahPartsDataUploader(db=db_session)
-        with open(os.path.join(ayah_parts_data_directory, "reciter_audios_page_5000_missing_text.json")) as f:
-            with pytest.raises(data_upload_service.DataUploadException):
-                ayah_parts_data_uploader.save_data_from_ayah_parts_file(f)
 
 
 class TestPageImagesDataUploader:

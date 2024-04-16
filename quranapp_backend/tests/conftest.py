@@ -95,6 +95,7 @@ def pytest_unconfigure(config):  # noqa
             ayah_part_ids_to_delete.append(ayah_part.id)
 
         db.query(AyahPartMarker).filter(AyahPartMarker.id.in_(markers_ids_to_delete)).delete()
+        db.query(ReciterAudio).filter(ReciterAudio.ayah_part_id.in_(ayah_part_ids_to_delete)).delete()
         db.query(AyahPart).filter(AyahPart.id.in_(ayah_part_ids_to_delete)).delete()
 
         test_reciter: Reciter = db.query(Reciter).filter_by(name="Test reciter name").first()
