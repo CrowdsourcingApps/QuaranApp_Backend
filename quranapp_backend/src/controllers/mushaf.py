@@ -43,4 +43,4 @@ def get_surahs(riwayah: RiwayahEnum, publisher: PublisherEnum, db: Session = db_
     mushaf = mushafs_service.get_mushaf_if_exists(db=db, riwayah=riwayah, publisher=publisher)
     if not mushaf:
         raise HTTPException(detail="Mushaf not found", status_code=status.HTTP_404_NOT_FOUND)
-    return surahs_service.get_surahs_in_mushaf(db=db, mushaf_id=mushaf.id)
+    return surahs_service.get_surahs_in_mushaf_mapped(db=db, mushaf_id=mushaf.id)
