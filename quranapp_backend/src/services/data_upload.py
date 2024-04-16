@@ -33,7 +33,7 @@ class AyahPartsDataUploader:
         self.db = db
         self.existing_surahs_numbers = set([surah.id for surah in surahs_service.get_all_surahs(db)])
         self.existing_ayah_parts: dict[str, AyahPart] = dict()
-        self.reciter_audios_to_text_ids_mapping: dict[uuid.UUID, ReciterAudio] = dict()
+        self.reciter_audios_to_ayah_part_ids_mapping: dict[uuid.UUID, ReciterAudio] = dict()
         self.ayah_parts_texts_to_ids_mapping = {
             ayah_part_text.text: ayah_part_text.id
             for ayah_part_text in ayah_part_texts_service.get_all_ayah_part_texts(db)
@@ -63,7 +63,7 @@ class AyahPartsDataUploader:
 
     def _fill_existing_reciter_audios(self, reciter_id: uuid.UUID) -> None:
         for reciter_audio in reciters_service.get_reciter_audios_by_reciter_id(self.db, reciter_id):
-            self.reciter_audios_to_text_ids_mapping[reciter_audio.ayah_part_text_id] = reciter_audio
+            self.reciter_audios_to_ayah_part_ids_mapping[reciter_audio.ayah_part_id] = reciter_audio
 
     def _fill_mushaf_related_data(self, mushaf_id: uuid.UUID) -> None:
         self._fill_ids_for_existing_ayahs(mushaf_id=mushaf_id)
@@ -125,11 +125,11 @@ class AyahPartsDataUploader:
             self.markers_ids_to_delete.extend([marker.id for marker in ayah_part.markers])
             markers_data.extend(uploaded_markers_data)
 
-    def _update_reciter_audio(self, text_id: uuid.UUID, uploaded_audio_link: str) -> None:
-        reciter_audio = self.reciter_audios_to_text_ids_mapping[text_id]
+    def _update_reciter_audio(self, ayah_part_id: uuid.UUID, uploaded_audio_link: str) -> None:
+        reciter_audio = self.reciter_audios_to_ayah_part_ids_mapping[ayah_part_id]
         if reciter_audio.audio_link != uploaded_audio_link:
             self.reciter_audios_to_update.append({
-                "reciter_id": reciter_audio.reciter_id, "ayah_part_text_id": text_id,
+                "reciter_id": reciter_audio.reciter_id, "ayah_part_id": ayah_part_id,
                 "audio_link": uploaded_audio_link
             })
 
@@ -214,6 +214,7 @@ class AyahPartsDataUploader:
             self.processed_ayah_part_keys.add(ayah_part_key)
 
             if ayah_part_key in self.existing_ayah_parts:
+                ayah_part_id = self.existing_ayah_parts[ayah_part_key].id
                 self._update_ayah_part(ayah_part_key, uploaded_ayah_part_data, markers_data)
 
             else:
@@ -230,19 +231,13 @@ class AyahPartsDataUploader:
             # Добавление данных по ReciterAudio | обновление ReciterAudio
             reciter_audio_link = uploaded_ayah_part_data.audio_link
             if reciter_id and reciter_audio_link:
-                if not ayah_part_text_id:
-                    raise DataUploadException(
-                        f"To load audio link for ayah part, text is required. Ayah part that caused the error: "
-                        f"surah number = {surah_number}, ayah number = {ayah_in_surah_number}, "
-                        f"part number = {ayah_part_number}"
-                    )
 
-                if ayah_part_text_id in self.reciter_audios_to_text_ids_mapping:
-                    self._update_reciter_audio(ayah_part_text_id, reciter_audio_link)
+                if ayah_part_id in self.reciter_audios_to_ayah_part_ids_mapping:
+                    self._update_reciter_audio(ayah_part_id, reciter_audio_link)
 
                 else:
                     reciter_audios_data.append({
-                        "reciter_id": reciter_id, "ayah_part_text_id": ayah_part_text_id,
+                        "reciter_id": reciter_id, "ayah_part_id": ayah_part_id,
                         "audio_link": reciter_audio_link
                     })
 
