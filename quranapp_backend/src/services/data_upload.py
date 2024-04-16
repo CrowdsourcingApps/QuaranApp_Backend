@@ -231,12 +231,6 @@ class AyahPartsDataUploader:
             # Добавление данных по ReciterAudio | обновление ReciterAudio
             reciter_audio_link = uploaded_ayah_part_data.audio_link
             if reciter_id and reciter_audio_link:
-                if not ayah_part_id:
-                    raise DataUploadException(
-                        f"To load audio link for ayah part, ayah_part_id is required. Ayah part that caused the error: "
-                        f"surah number = {surah_number}, ayah number = {ayah_in_surah_number}, "
-                        f"part number = {ayah_part_number}"
-                    )
 
                 if ayah_part_id in self.reciter_audios_to_ayah_part_ids_mapping:
                     self._update_reciter_audio(ayah_part_id, reciter_audio_link)
