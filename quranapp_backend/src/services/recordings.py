@@ -8,7 +8,7 @@ from src.models import DetailedRecording, AyahPartDetailed
 
 
 def create_recording(
-        db: Session, recording_id: uuid.UUID,  user_id: str, start: AyahPart, end: AyahPart, audio_url: str
+        db: Session, recording_id: uuid.UUID, user_id: str, start: AyahPart, end: AyahPart, audio_url: str
 ) -> Recording:
     db_recording = Recording(id=recording_id, user_id=user_id, start=start, end=end, audio_url=audio_url)
     db.add(db_recording)
@@ -61,7 +61,11 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
 
 
 def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
-    shared_recordings = db.query(SharedRecording).filter_by(recipient_id=user_id).all()
+    shared_recordings = db.query(SharedRecording).filter(
+        SharedRecording.recording.has(Recording.is_deleted.isnot(True)),
+        SharedRecording.recipient_id == user_id,
+    ).all()
+
     result = []
     for shared in shared_recordings:
         start = shared.recording.start
@@ -108,7 +112,7 @@ def get_recording_by_id(db: Session, recording_id: uuid.UUID) -> Recording:
     recording = db.get(Recording, recording_id)
     if recording is None or recording.is_deleted:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Recording with given id does not exist')
-    return recording # noqa
+    return recording  # noqa
 
 
 def check_if_recording_exists(db: Session, recording_id: uuid.UUID) -> bool:
@@ -118,7 +122,6 @@ def check_if_recording_exists(db: Session, recording_id: uuid.UUID) -> bool:
 def delete_recording(db: Session, recording_id: uuid.UUID) -> None:
     recording = get_recording_by_id(db, recording_id)
     recording.is_deleted = True
-    db.query(SharedRecording).filter_by(recording_id=recording_id).delete()
     db.commit()
 
 
