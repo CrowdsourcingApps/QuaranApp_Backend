@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session, joinedload, contains_eager
 from starlette import status
 
-from src.dal.models import MushafPage, Ayah, AyahPart, AyahPartText, ReciterAudio
+from src.dal.models import MushafPage, Ayah, AyahPart, ReciterAudio
 from src.mappers import ayah_part_mapper
 from src.models import MushafPageDetails, PagesRangeRequest, RangeStartAndEndPages
 
@@ -20,7 +20,7 @@ def get_ayah_parts_and_markers_by_page_id(db: Session, page_id: uuid.UUID) -> Mu
         contains_eager(AyahPart.ayah).joinedload(Ayah.mushaf),
         contains_eager(AyahPart.ayah).joinedload(Ayah.surah),
         joinedload(AyahPart.markers),
-        joinedload(AyahPart.text).joinedload(AyahPartText.reciter_audios).joinedload(ReciterAudio.reciter)
+        joinedload(AyahPart.reciter_audios).joinedload(ReciterAudio.reciter)
     ).order_by(Ayah.surah_number, Ayah.ayah_in_surah_number).all()
 
     return ayah_part_mapper.map_to_page_details(page_id=page_id, ayah_parts=ayah_parts)

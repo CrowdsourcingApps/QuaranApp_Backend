@@ -1,6 +1,6 @@
 import uuid
 
-from src.dal.models import AyahPart as AyahPartDal, AyahPartText, Mushaf
+from src.dal.models import AyahPart as AyahPartDal, AyahPartText, Mushaf, ReciterAudio
 from src.dal.models import AyahPartMarker as AyahPartMarkerDal
 from src.models import MushafPageDetails, MushafPageAyahPart, AyahPartMarker
 
@@ -16,7 +16,7 @@ def map_to_page_details(page_id: uuid.UUID, ayah_parts: list[AyahPartDal]) -> Mu
             ayah_in_surah_number=ayah_part.ayah.ayah_in_surah_number,
             text=_map_text(ayah_part.text),
             text_id=ayah_part.ayah_part_text_id,
-            audio_link=_map_reciter_audio(ayah_part.text, ayah_part.ayah.mushaf),
+            audio_link=_map_reciter_audio(ayah_part.reciter_audios, ayah_part.ayah.mushaf),
             markers=_map_ayah_part_markers(ayah_part.markers)
         ))
 
@@ -49,11 +49,11 @@ def _map_text(text: AyahPartText) -> str | None:
     return text.text
 
 
-def _map_reciter_audio(text: AyahPartText, mushaf: Mushaf) -> str | None: # noqa
-    if text is None:
+def _map_reciter_audio(reciter_audios: list[ReciterAudio], mushaf: Mushaf) -> str | None: # noqa
+    if reciter_audios is None:
         return None
 
-    audios = list(filter(lambda x: x.reciter.riwayah == mushaf.riwayah, text.reciter_audios))
+    audios = list(filter(lambda x: x.reciter.riwayah == mushaf.riwayah, reciter_audios))
 
     if len(audios) < 1:
         return None
