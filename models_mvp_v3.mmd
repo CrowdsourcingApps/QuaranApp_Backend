@@ -1,5 +1,5 @@
 ---
-title: Quarapp MVP-2 DAL Models
+title: Quarapp MVP-3 DAL Models
 ---
 classDiagram
 class Riwayah {
@@ -51,14 +51,14 @@ class AyahPart {
     Int: partNumber = 0
 }
 class SurahInMushaf {
-    Uuid: firstPageId
+    Uuid: firstPageInMushafId
     Int: surahNumber
 }
 class Recording {
     Uuid: id
     String: userId
     AyahPart: start
-    AyahPart: end
+    AyahPart: end 
     String: audioUrl
     Date: createdAt
 }
@@ -66,6 +66,7 @@ class SharedRecording {
     Uuid: recipientId
     Uuid: recordingId
     Date: createdAt
+    Bool: isReviewed
 }
 class AyahPartMarkers {
     Uuid: id
@@ -90,10 +91,23 @@ class AyahPartText {
     Uuid: id
     String: text
 }
+class RecordingError {
+    Uuid: id
+    Uuid: commentatorId
+    Uuid: recordingId
+    Uuid: startMarkerId
+    Uuid: endMarkerId
+    String: description
+}
 
+
+AyahPartMarkers --> RecordingError
+RecordingError <-- Recording
 
 User -- Recording: creates
 User --> SharedRecording
+
+User --> RecordingError
 
 SharedRecording <-- Recording
 Recording -- AyahPart: is range of
