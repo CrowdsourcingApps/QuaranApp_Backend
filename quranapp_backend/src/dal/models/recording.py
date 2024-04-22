@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, String, DateTime, ForeignKey
+from sqlalchemy import Column, String, DateTime, Boolean, ForeignKey, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -18,6 +18,12 @@ class Recording(Base):
     end_id = Column(UUID(as_uuid=True), ForeignKey("ayah_parts.id"), nullable=False)
     audio_url = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
+    is_deleted = Column(Boolean, nullable=True)
+
     user = relationship("User", back_populates="recordings")
     start = relationship("AyahPart", foreign_keys=[start_id])
     end = relationship("AyahPart", foreign_keys=[end_id])
+
+    __table_args__ = (
+        Index('ix_recordings_user_id_is_deleted', 'user_id', 'is_deleted'),
+    )

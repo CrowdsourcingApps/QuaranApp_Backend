@@ -7,7 +7,8 @@ from azure.storage.blob import BlobServiceClient
 def get_container_client():
     connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-    container_client_ = blob_service_client.get_container_client(container="quran-app")
+    container_name = os.getenv('AZURE_CONTAINER_NAME')
+    container_client_ = blob_service_client.get_container_client(container=container_name)
     return container_client_
 
 

@@ -1,16 +1,17 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from src.dal.enums import RiwayahEnum
+from src.dal.enums import RiwayahEnum, PublisherEnum
 from src.models.ayah_part import AyahPartDetailed, AyahPart, AyahPartSearch
 
 
 class RecordingCreate(BaseModel):
+    riwayah: RiwayahEnum
+    publisher: PublisherEnum
     start: AyahPartSearch
     end: AyahPartSearch
-    riwayah: RiwayahEnum
 
 
 class Recording(BaseModel):
@@ -21,8 +22,7 @@ class Recording(BaseModel):
     audio_url: str
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RecordingShare(BaseModel):
@@ -38,8 +38,11 @@ class SharedRecording(BaseModel):
 class DetailedRecording(BaseModel):
     id: uuid.UUID
     user_alias: str
+    is_my_recording: bool
     riwayah: RiwayahEnum
+    publisher: PublisherEnum
     start: AyahPartDetailed
     end: AyahPartDetailed
+    range_string: str
     created_at: datetime
     audio_url: str

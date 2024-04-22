@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 import src.startup as startup
-from src.controllers import settings, users, recordings, tokens
+from src.controllers import settings, users, recordings, tokens, mushaf, quran, data_upload
 
 app = FastAPI()
 
@@ -18,5 +18,8 @@ app.include_router(users)
 app.include_router(recordings)
 app.include_router(settings)
 app.include_router(tokens)
+app.include_router(mushaf)
+app.include_router(quran)
+app.include_router(data_upload)
 
 startup.apply_migrations()

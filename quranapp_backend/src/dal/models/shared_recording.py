@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, PrimaryKeyConstraint, String
+from sqlalchemy import Column, DateTime, ForeignKey, PrimaryKeyConstraint, String, Index
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -17,4 +17,6 @@ class SharedRecording(Base):
 
     __table_args__ = (
         PrimaryKeyConstraint('recipient_id', 'recording_id'),
+        Index('ix_shared_recordings_recipient_id', 'recipient_id'),
+        Index('ix_shared_recordings_recording_id', 'recording_id'),
     )

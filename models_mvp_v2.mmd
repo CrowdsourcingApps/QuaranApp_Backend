@@ -1,0 +1,113 @@
+---
+title: Quarapp MVP-2 DAL Models
+---
+classDiagram
+class Riwayah {
+    <<enumeration>>
+    Hafs
+    Qaloon
+}
+class MushafPublisher {
+    <<enumeration>>
+    Madina
+    Jawamee
+}
+class User {
+    String: id
+    String: alias
+    String: name
+    String: surname
+}
+class Mushaf {
+    Uuid: id
+    MushafPublisher: publisher
+    Riwayah: riwayah
+}
+class Surah {
+    Int: number
+    String: title
+    String: revelationType
+    String: titleEng
+    String: titleEngTranslation
+}
+class MushafPage {
+    Uuid: id
+    Int: index
+    Uuid: mushafId
+    String: lightModeLink
+    String: darkModeLink
+}
+class Ayah {
+    Uuid: id
+    Uuid: mushafId
+    Int: surahNumber
+    Int: ayahInSurahNumber
+}
+class AyahPart {
+    Uuid: id
+    Uuid: ayahId
+    Uuid: mushafPageId
+    Uuid: ayahPartTextId
+    Int: partNumber = 0
+}
+class SurahInMushaf {
+    Uuid: firstPageId
+    Int: surahNumber
+}
+class Recording {
+    Uuid: id
+    String: userId
+    AyahPart: start
+    AyahPart: end
+    String: audioUrl
+    Date: createdAt
+}
+class SharedRecording {
+    Uuid: recipientId
+    Uuid: recordingId
+    Date: createdAt
+}
+class AyahPartMarkers {
+    Uuid: id
+    Uuid: ayahPartId
+    Int: orderId
+    Int: x
+    Int: y1
+    Int: y2
+    Bool: isNewLine
+}
+class Reciter {
+    Uuid: id
+    String: name
+    Riwayah: riwayah
+}
+class ReciterAudio {
+    Uuid: reciterId
+    String: audioLink
+    Uuid: ayahPartId
+}
+class AyahPartText {
+    Uuid: id
+    String: text
+}
+
+
+User -- Recording: creates
+User --> SharedRecording
+
+SharedRecording <-- Recording
+Recording -- AyahPart: is range of
+AyahPartMarkers -- AyahPart: belongs to
+AyahPart -- ReciterAudio: refers to
+AyahPart -- Ayah: is part of
+AyahPart -- MushafPage: belongs to
+AyahPart -- AyahPartText: refers to
+Ayah -- Mushaf: belongs to
+Ayah -- Surah: belongs to
+MushafPage -- Mushaf: belongs to
+MushafPage --> SurahInMushaf
+SurahInMushaf <-- Surah
+ReciterAudio -- Reciter: belongs to
+Reciter -- Riwayah
+Mushaf -- Riwayah
+Mushaf -- MushafPublisher

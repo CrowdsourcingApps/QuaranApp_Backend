@@ -1,0 +1,25 @@
+{
+    "riwayah": "Qaloon",
+    "publisher": "Madina",
+    "reciter": "Test reciter name",
+    "ayahParts": [
+        {
+            "page_number": 5000,
+            "surah_number": 1,
+            "ayah_number": 1002,
+            "part_number": 0,
+            "text": "Test text data upload. Text 2",
+            "audio_link": "https://test-link2_updated.com",
+            "lines": [
+                [
+                    {"x": 238, "y1": 451, "y2": 388},
+                    {"x": 150, "y1": 388, "y2": 451}
+                ],
+                [
+                    {"x": 603, "y1": 460, "y2": 531},
+                    {"x": 515, "y1": 531, "y2": 460}
+                ]
+            ]
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+{
+  "riwayah": "Qaloon",
+  "publisher": "Madina",
+  "pages": [
+    {
+      "page_number": 5000,
+      "light_mode_link": "https://nurlingo.github.io/content/qaloon/mushaf.madinah/1.png",
+      "dark_mode_link": "https://nurlingo.github.io/content/qaloon/mushaf.madinah/1~dark.png"
+    },
+    {
+      "page_number": 5001,
+      "light_mode_link": "https://test-url.png",
+      "dark_mode_link": "https://test-url~dark.png"
+    }
+ ]
+}
