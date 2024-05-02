@@ -10,7 +10,11 @@ from src.models import MushafPageDetails, PagesRangeRequest, RangeStartAndEndPag
 
 
 def get_pages_by_mushaf_id(db: Session, mushaf_id: uuid.UUID) -> list[MushafPage]:
-    return db.query(MushafPage).filter_by(mushaf_id=mushaf_id).order_by(MushafPage.index).all()
+    return (db.query(MushafPage)
+            .filter_by(mushaf_id=mushaf_id)
+            .filter(MushafPage.ayah_parts.any())
+            .order_by(MushafPage.index)
+            .all())
 
 
 def get_ayah_parts_and_markers_by_page_id(db: Session, page_id: uuid.UUID) -> MushafPageDetails:
