@@ -1,4 +1,4 @@
-FROM ubuntu:latest as build
+FROM ubuntu:jammy as build
 
 COPY . /app
 
