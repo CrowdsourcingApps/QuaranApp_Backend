@@ -1,7 +1,7 @@
 import uuid
 
 from src.dal.enums import RiwayahEnum, PublisherEnum
-from src.dal.models import Recording, AyahPart
+from src.dal.models import Recording, AyahPart, SharedRecording
 from src.models import AyahPartSearch
 from src.services import ayah_parts
 from src.services.recordings import create_recording, get_recording_by_id, delete_recording, share_recording, \
@@ -86,5 +86,6 @@ class TestRecordingService:
         assert len(get_shared_with_me_recordings(db_session, user2.id)) == 0
 
         # Clear db
+        db_session.query(SharedRecording).filter(SharedRecording.recording_id == self.saved_recording.id).delete()
         db_session.delete(recording)
         db_session.commit()
