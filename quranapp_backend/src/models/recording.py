@@ -42,7 +42,9 @@ class DetailedRecording(BaseModel):
     riwayah: RiwayahEnum
     publisher: PublisherEnum
     start: AyahPartDetailed
+    start_page_index: int
     end: AyahPartDetailed
+    end_page_index: int
     range_string: str
     created_at: datetime
     audio_url: str

@@ -49,10 +49,12 @@ def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
                 surah_number=start.ayah.surah_number,
                 ayah_in_surah_number=start.ayah.ayah_in_surah_number,
                 part_number=start.part_number),
+            start_page_index=start.mushaf_page.index,
             end=AyahPartDetailed(
                 surah_number=end.ayah.surah_number,
                 ayah_in_surah_number=end.ayah.ayah_in_surah_number,
                 part_number=end.part_number),
+            end_page_index=end.mushaf_page.index,
             range_string=range_string,
             created_at=recording.created_at,
             audio_url=recording.audio_url))
@@ -82,10 +84,12 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
                 surah_number=start.ayah.surah_number,
                 ayah_in_surah_number=start.ayah.ayah_in_surah_number,
                 part_number=start.part_number),
+            start_page_index=start.mushaf_page.index,
             end=AyahPartDetailed(
                 surah_number=end.ayah.surah_number,
                 ayah_in_surah_number=end.ayah.ayah_in_surah_number,
                 part_number=end.part_number),
+            end_page_index=end.mushaf_page.index,
             range_string=range_string,
             created_at=shared.recording.created_at,
             audio_url=shared.recording.audio_url))

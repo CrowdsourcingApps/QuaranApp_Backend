@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, ForeignKey, PrimaryKeyConstraint, String, Index
+from sqlalchemy import Column, DateTime, ForeignKey, PrimaryKeyConstraint, String, Index, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -12,6 +12,8 @@ class SharedRecording(Base):
     recipient_id = Column(String, ForeignKey('users.id'), nullable=False)
     recording_id = Column(UUID(as_uuid=True), ForeignKey('recordings.id'), nullable=False)
     created_at = Column(DateTime, default=datetime.now, nullable=False)
+    is_reviewed = Column(Boolean, default=False, nullable=False)
+
     recipient = relationship("User")
     recording = relationship("Recording")
 
