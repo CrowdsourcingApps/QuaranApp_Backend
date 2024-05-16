@@ -17,6 +17,8 @@ from src.dal.database import SessionLocal
 from src.services import azure_blob_storage
 
 temp_audio_chunks_dirname = "temp_audio_chunks"
+if not os.path.isdir(temp_audio_chunks_dirname):
+    os.mkdir(temp_audio_chunks_dirname)
 
 
 # def defaultdict_factory():
@@ -63,10 +65,13 @@ ayah_parts_to_text_mapping = get_all_ayah_parts_to_text_mapping(db)
 #     return text
 
 
+# todo test
 def get_all_texts_for_recording(start: dict, end: dict, recording_id: uuid.UUID) -> list[tuple]:
     current_ayah_part = start
     result_texts_with_ayah_part_info: list[tuple] = list()
     while current_ayah_part != end:
+
+        # todo добавляю обработку на случай, если не нашли ая партов для такой-то суры и аята
         mushaf_key = f"{current_ayah_part['riwayah']}-{current_ayah_part['publisher']}"
         surah_number = current_ayah_part['surah_number']
         ayah_number = current_ayah_part['ayah_number']
@@ -77,6 +82,7 @@ def get_all_texts_for_recording(start: dict, end: dict, recording_id: uuid.UUID)
         text = ayah_parts_texts.get(part_number)
 
         if text is None:
+            # Не включаю этот ая парт и текст в список текстов
             print(
                 f"Text not found for the following ayah part, used in recording '{recording_id}':"
                 f"Surah number={surah_number}, ayah number={ayah_number}, part number={part_number},"
@@ -84,10 +90,34 @@ def get_all_texts_for_recording(start: dict, end: dict, recording_id: uuid.UUID)
 
             )
 
+        else:
+            result_texts_with_ayah_part_info.append((text, current_ayah_part))
+
+        next_part_number = part_number + 1
+        # Если есть следующий ая парт в том же аяте
+        if next_part_number in ayah_parts_texts:
+            current_ayah_part['part_number'] = next_part_number
+            # Переходим к следующему ая парту
+            continue
+
+        next_ayah_number = ayah_number + 1
+        # Если есть следующий аят в той же суре
+        if next_ayah_number in ayahs:
+            current_ayah_part['ayah_number'] = next_ayah_number
+            continue
+
+        next_surah_number = surah_number + 1
+        current_ayah_part['surah_number'] = next_surah_number
+        surah_ayahs = ayah_parts_to_text_mapping[mushaf_key].get(surah_number, list())
+        if 0 in surah_ayahs:
+            current_ayah_part['ayah_number'] = 0
+        else:
+            current_ayah_part['ayah_number'] = 1
+
     return result_texts_with_ayah_part_info
 
 
-# Тут - пока не делаю фильтрацию
+# Тут - пока не делаю фильтрацию по условию, что рекординг был зашерен и проверен
 recordings = db.query(Recording).options(
     joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
     joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
@@ -103,7 +133,7 @@ model.to(device)
 
 for recording in recordings:
     # # todo remove
-    # if str(recording.id) == "710e133a-dd65-4cbb-9cd6-763d16ce437b":
+    if str(recording.id) == "710e133a-dd65-4cbb-9cd6-763d16ce437b":
         recording_id = recording.id
 
         # loading audio file from Azure
@@ -138,7 +168,7 @@ for recording in recordings:
                 continue
 
         except pydub_exceptions.CouldntDecodeError as e:
-            print(f"Could not read audio file '{blob_name}' for recording '{recording_id}', skipping")
+            print(f"Could not read audio file '{blob_name}' for recording '{recording_id}', skipping...")
             continue
 
         audio_segment.export(f"audio_{recording_id}.wav", format="wav")
@@ -175,7 +205,7 @@ for recording in recordings:
             "part_number": end_ayah_part.part_number
         }
 
-        recording_texts = get_all_texts_for_recording(start_ayah_part_info, end_ayah_part_info)
+        recording_texts = get_all_texts_for_recording(start_ayah_part_info, end_ayah_part_info, recording_id)
 
         # Recognizing text in audio chunks
         for file_name in os.listdir(recording_chunks_dir_path):  # мб добавить "sorted"
