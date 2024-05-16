@@ -9,3 +9,10 @@ class RiwayahEnum(Enum):
 class PublisherEnum(Enum):
     MADINA = "Madina"
     JAWAMEE = "Jawamee"
+
+
+class MistakeType(Enum):
+    WORDING = "Wording"
+    LETTERS = "Letters"
+    TASHKEEL = "Tashkeel"
+    TAJWEED = "Tajweed"

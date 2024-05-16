@@ -12,3 +12,4 @@ from src.dal.models.mushaf import Mushaf
 from src.dal.models.mushaf_page import MushafPage
 from src.dal.models.ayah_part_marker import AyahPartMarker
 from src.dal.models.reciter_audio import ReciterAudio
+from src.dal.models.recording_mistake import RecordingMistake
