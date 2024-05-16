@@ -35,7 +35,7 @@ def upgrade() -> None:
     )
     op.create_index('ix_recording_mistakes_commentator_id', 'recording_mistakes', ['commentator_id'], unique=False)
     op.create_index('ix_recording_mistakes_recording_id', 'recording_mistakes', ['recording_id'], unique=False)
-    op.add_column('shared_recordings', sa.Column('is_reviewed', sa.Boolean(), nullable=False))
+    op.add_column('shared_recordings', sa.Column('is_reviewed', sa.Boolean(), nullable=True))
     # ### end Alembic commands ###
 
 
