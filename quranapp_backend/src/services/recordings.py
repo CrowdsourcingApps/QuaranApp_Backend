@@ -134,3 +134,42 @@ def check_recording_owner(db: Session, user_id: str, recording_id: uuid.UUID) ->
     if user_id != recording.user_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
     return True
+
+
+def get_recording_owner(db: Session, recording_id: uuid.UUID) -> str:
+    recording = get_recording_by_id(db, recording_id)
+    return recording.user_id
+
+
+def get_shared_recording_by_id(db: Session, recipient_id: str, recording_id: uuid.UUID) -> SharedRecording:
+    recording = db.get(SharedRecording, (recipient_id, recording_id))
+    if recording is None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You have no ability to review this recording'
+        )
+    return recording  # noqa
+
+
+def check_recording_access(db: Session, user_id: str, recording_id: uuid.UUID) -> bool:
+    shared_recording = db.get(SharedRecording, (user_id, recording_id))
+
+    if shared_recording is not None:
+        return True
+
+    owned_recording = db.get(Recording, recording_id)
+    if owned_recording is not None and owned_recording.user_id == user_id:
+        return True
+
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail='You have no access to this recording'
+    )
+
+
+def mark_as_reviewed(db: Session, recipient_id: str, recording_id: uuid.UUID) -> None:
+    recording_owner = get_recording_owner(db=db, recording_id=recording_id)
+    if recording_owner != recipient_id:
+        recording = get_shared_recording_by_id(db, recipient_id, recording_id)
+        recording.is_reviewed = True
+        db.commit()

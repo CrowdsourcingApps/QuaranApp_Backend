@@ -49,7 +49,6 @@ def check_is_token_correct(db: Session, token: str, user_id: str) -> bool:
 
 def get_user_id_from_jwt(token: str):
     payload = jwt.decode(token, APP_PUBLIC_KEY, algorithms=JWT_ALG)
-    print(payload)
     return payload.get("user_id")
 
 
