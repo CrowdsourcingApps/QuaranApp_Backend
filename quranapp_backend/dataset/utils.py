@@ -1,7 +1,6 @@
 def find_two_largest_values_and_indexes(input_values_list: list[float]):
-    if len(input_values_list) < 2:
-        # todo add another handling for this case
-        return "List should have at least two elements."
+    if len(input_values_list) == 1:
+        return 0, 0, input_values_list[0], input_values_list[0]
 
     largest_index = -1
     second_largest_index = -1
