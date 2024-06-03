@@ -13,10 +13,11 @@ import nltk
 from pydub import AudioSegment, exceptions as pydub_exceptions
 from pydub.silence import split_on_silence
 from transformers import AutoProcessor, AutoModelForSpeechSeq2Seq
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_
+from sqlalchemy.orm import Session, joinedload, contains_eager
 from azure.core.exceptions import ResourceNotFoundError
 
-from src.dal.models import Recording, AyahPart, Ayah, AyahPartMarker
+from src.dal.models import Recording, AyahPart, Ayah, AyahPartMarker, SharedRecording
 from src.dal.database import SessionLocal
 from src.services import azure_blob_storage
 
@@ -198,11 +199,15 @@ def get_all_texts_for_recording(start: dict, end: dict, recording_id: uuid.UUID)
     return result_texts_with_ayah_part_info
 
 
-# Тут - пока не делаю фильтрацию по условию, что рекординг был зашерен и проверен
-recordings = db.query(Recording).options(
+# Тут - пока включаю те рекординги, которые не были проверены, и deleted-рекординги
+shared_recordings_join_condition = and_(
+    SharedRecording.recording_id == Recording.id, SharedRecording.is_reviewed == True
+)
+recordings = db.query(Recording).outerjoin(SharedRecording, shared_recordings_join_condition).options(
     joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
     joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
-    joinedload(Recording.mistakes)
+    joinedload(Recording.mistakes),
+    contains_eager(Recording.shares)
 ).all()
 
 processor = AutoProcessor.from_pretrained("tarteel-ai/whisper-base-ar-quran")
@@ -214,9 +219,13 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
 results = list()
+ayah_parts_with_incorrect_markers = set()
+counter_all_recordings = 0
+counter_dataset_recordings = 0
 
 for recording in recordings:
         recording_id = recording.id
+        counter_all_recordings += 1
 
         # loading audio file from Azure
         blob_name: str = recording.audio_url.split("/")[-1]
@@ -265,6 +274,9 @@ for recording in recordings:
             chunk_filepath = os.path.join(recording_chunks_dir_path, f"chunk{i}.wav")
             audio_chunk.export(chunk_filepath, format="wav")
 
+        recording_reviewers = [recording_share.recipient_id for recording_share in recording.shares]
+        is_recording_reviewed = True if recording_reviewers else False
+
         start_ayah_part = recording.start
         start_ayah_part_info = {
             "riwayah": start_ayah_part.ayah.mushaf.riwayah.value,
@@ -300,11 +312,8 @@ for recording in recordings:
             ayah_part_info[2]: ayah_part_info[0] for ayah_part_info in filtered_recording_texts_to_ayah_parts
         }
 
-        # Пока что - записываем ошибки для каждого ая парта, делим ошибки для ая парта по словам
         # текущая структура:
-        # {ayah_part_id: {word_errors: {word: [error type 1, error type 2]}, correct_splitting: False}}
-        # целевая структура:
-        # {ayah_part_id: {reviewer_id: {word_errors: {word: [error type 1, error type 2]}}, correct_splitting: False}}
+        # {ayah_part_id: {reviewer_id: {word_errors: {word: [error type 1, error type 2]}}}
 
         # Mapping errors to ayah parts
         ayah_parts_to_errors_mapping = defaultdict(dict)
@@ -322,24 +331,23 @@ for recording in recordings:
                 word_with_error = ayah_part_text.split(" ")[order]
             except IndexError:
                 # Маркеры не соответствуют разбиению на слова; маркеров больше, чем должно быть для текущего текста
-                ayah_parts_to_errors_mapping[ayah_part_id]["correct_splitting"] = False
+                ayah_parts_with_incorrect_markers.add(ayah_part_id)
                 print(
                     f"Recording '{recording_id}': could find word by index {order} in text {ayah_part_text} "
                     f"for ayah part '{ayah_part_id}', seems markers are incorrect, skipping current recording error..."
                 )
             else:
                 ayah_part_errors = ayah_parts_to_errors_mapping[ayah_part_id]
-                if "word_errors" not in ayah_part_errors:
-                    ayah_part_errors["word_errors"] = dict()
-                if word_with_error not in ayah_part_errors["word_errors"]:
-                    ayah_part_errors["word_errors"][word_with_error] = set()
-                ayah_part_errors["word_errors"][word_with_error].add(error.mistake_type.value)
+                commentator_id = error.commentator_id
+                if commentator_id not in ayah_part_errors:
+                    ayah_part_errors[commentator_id] = dict()
+                if word_with_error not in ayah_part_errors[commentator_id]:
+                    ayah_part_errors[commentator_id][word_with_error] = set()
+                ayah_part_errors[commentator_id][word_with_error].add(error.mistake_type.value)
 
-            # add dividing by commentator
+        counter_dataset_recordings += 1
 
-        # структура: {ayah_part_id: {reviewer_id: {word: [error type 1, error type 2], word2: [error type 1, error type 2]}}}
-
-        # Counters for chunks - for chunks we could not map to ayah part and for all chunks
+        # Counters for chunks: for chunks that we could not map to ayah part and for all chunks
         chunks_with_found_ayah_part = 0
         chunks_all = 0
 
@@ -390,8 +398,8 @@ for recording in recordings:
                     "ayah": "undefined",
                     "text": "undefined",
                     "errors": {},
-                    "correct_splitting": True,
-                    "mushaf_publisher": "undefined"
+                    "mushaf_publisher": "undefined",
+                    "reviewer_id": "undefined" if is_recording_reviewed else "not reviewed"
                 }
                 results.append(chunk_result)
                 continue
@@ -413,8 +421,8 @@ for recording in recordings:
                     "ayah": "undefined",
                     "text": "undefined",
                     "errors": {},
-                    "correct_splitting": True,
-                    "mushaf_publisher": "undefined"
+                    "mushaf_publisher": "undefined",
+                    "reviewer_id": "undefined" if is_recording_reviewed else "not reviewed"
                 }
 
             else:
@@ -428,25 +436,43 @@ for recording in recordings:
                 mapped_ayah_part_info = mapped_ayah_part[1]
                 mapped_ayah_part_id = mapped_ayah_part[2]
 
-                errors_info = ayah_parts_to_errors_mapping[mapped_ayah_part_id]
-                errors_by_words = {
-                    word: list(errors_set) for word, errors_set in errors_info.get("word_errors", {}).items()
-                }
+                errors_by_reviewers_info = list()
 
-                chunk_result = {
-                    "file_name": os.path.join(recording_chunks_dir_path, file_name),
-                    "recording_id": str(recording_id),
-                    "riwayah": mapped_ayah_part_info["riwayah"],
-                    "surah": str(mapped_ayah_part_info["surah_number"]),
-                    "ayah": str(mapped_ayah_part_info["ayah_number"]),
-                    "text": mapped_ayah_part_text,
-                    "errors": errors_by_words,
-                    "correct_splitting": errors_info.get("correct_splitting", True),
-                    "mushaf_publisher": mapped_ayah_part_info["publisher"]
-                }
-            results.append(chunk_result)
+                if is_recording_reviewed:
+                    overall_errors_info = ayah_parts_to_errors_mapping[mapped_ayah_part_id]
+                    for reviewer_id in recording_reviewers:
+                        errors_by_reviewer = overall_errors_info.get(reviewer_id, {})
+                        formatted_errors_by_reviewer = {
+                            word: list(errors_set) for word, errors_set in errors_by_reviewer.items()
+                        }
+                        errors_by_reviewers_info.append((reviewer_id, formatted_errors_by_reviewer))
+                else:
+                    errors_by_reviewers_info.append(("not reviewed", {}))
+
+                for errors_marked_by_reviewer in errors_by_reviewers_info:
+                    chunk_result = {
+                        "file_name": os.path.join(recording_chunks_dir_path, file_name),
+                        "recording_id": str(recording_id),
+                        "riwayah": mapped_ayah_part_info["riwayah"],
+                        "surah": str(mapped_ayah_part_info["surah_number"]),
+                        "ayah": str(mapped_ayah_part_info["ayah_number"]),
+                        "text": mapped_ayah_part_text,
+                        "errors": errors_marked_by_reviewer[1],
+                        "mushaf_publisher": mapped_ayah_part_info["publisher"],
+                        "reviewer_id": errors_marked_by_reviewer[0]
+                    }
+                    results.append(chunk_result)
 
         print(f"Found ayah parts for {chunks_with_found_ayah_part} out of {chunks_all} audio chunks")
+
+if ayah_parts_with_incorrect_markers:
+    ayah_part_ids = [str(ayah_part_id) for ayah_part_id in ayah_parts_with_incorrect_markers]
+    print(f"There are incorrect markers for ayah parts: {', '.join(ayah_part_ids)}")
+
+print(
+    f"Collected {counter_dataset_recordings} out of initial {counter_all_recordings} to a dataset. "
+    f"Overall amount of recordings in a database: {db.query(Recording).count()}"
+)
 
 with open("metadata.jsonl", "w") as f:
     for result in results:
