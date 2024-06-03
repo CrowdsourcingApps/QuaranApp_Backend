@@ -18,7 +18,7 @@ class RecordingMistake(Base):
     mistake_type = Column(Enum(MistakeType), nullable=False)
 
     commentator = relationship("User")
-    recording = relationship("Recording")
+    recording = relationship("Recording", back_populates="mistakes")
 
     __table_args__ = (
         UniqueConstraint("commentator_id", "recording_id", "start_marker_id", "end_marker_id", "mistake_type"),

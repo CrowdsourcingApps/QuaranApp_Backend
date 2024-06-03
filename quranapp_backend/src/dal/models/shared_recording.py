@@ -15,7 +15,7 @@ class SharedRecording(Base):
     is_reviewed = Column(Boolean, default=False, nullable=True)
 
     recipient = relationship("User")
-    recording = relationship("Recording")
+    recording = relationship("Recording", back_populates="shares")
 
     __table_args__ = (
         PrimaryKeyConstraint('recipient_id', 'recording_id'),
