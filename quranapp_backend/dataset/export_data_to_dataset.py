@@ -220,12 +220,13 @@ model.to(device)
 
 results = list()
 ayah_parts_with_incorrect_markers = set()
-counter_all_recordings = 0
+all_recordings_count = db.query(Recording).count()
+counter_initial_recordings = 0
 counter_dataset_recordings = 0
 
 for recording in recordings:
         recording_id = recording.id
-        counter_all_recordings += 1
+        counter_initial_recordings += 1
 
         # loading audio file from Azure
         blob_name: str = recording.audio_url.split("/")[-1]
@@ -470,8 +471,8 @@ if ayah_parts_with_incorrect_markers:
     print(f"There are incorrect markers for ayah parts: {', '.join(ayah_part_ids)}")
 
 print(
-    f"Collected {counter_dataset_recordings} out of initial {counter_all_recordings} to a dataset. "
-    f"Overall amount of recordings in a database: {db.query(Recording).count()}"
+    f"Collected {counter_dataset_recordings} out of initial {counter_initial_recordings} to a dataset. "
+    f"Overall amount of recordings in a database: {all_recordings_count}"
 )
 
 with open("metadata.jsonl", "w") as f:
