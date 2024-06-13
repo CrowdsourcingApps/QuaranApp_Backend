@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.dal.models import RecordingMistake
 from src.models import Mistake, MistakeReviewInformation, MistakeMarkerInformation
@@ -31,7 +31,12 @@ def upload_review(
 def get_reviews(
         db: Session, recording_id: uuid.UUID
 ) -> list[MistakeMarkerInformation]:
-    recording_mistakes = db.query(RecordingMistake).filter_by(recording_id=recording_id).all()
+    recording_mistakes = db.query(RecordingMistake).filter_by(
+        recording_id=recording_id
+    ).options(
+        joinedload(RecordingMistake.commentator)
+    ).all()
+
     result = {}
     for mistake in recording_mistakes:
         if (mistake.start_marker_id, mistake.end_marker_id,) in result:

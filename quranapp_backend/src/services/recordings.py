@@ -1,9 +1,9 @@
 import uuid
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from src.dal.models import Recording, AyahPart, SharedRecording
+from src.dal.models import Recording, AyahPart, SharedRecording, Ayah
 from src.models import DetailedRecording, AyahPartDetailed
 
 
@@ -29,10 +29,20 @@ def get_range_string(start: AyahPart, end: AyahPart):
 
 
 def get_my_recordings(db: Session, user_id: str) -> list[DetailedRecording]:
-    recordings = (db.query(Recording)
-                  .filter_by(user_id=user_id)
-                  .filter(Recording.is_deleted.isnot(True))
-                  .all())
+    recordings = db.query(Recording).filter_by(
+        user_id=user_id
+    ).filter(
+        Recording.is_deleted.isnot(True)
+    ).options(
+        joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
+        joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.surah),
+        joinedload(Recording.start).joinedload(AyahPart.mushaf_page),
+        joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
+        joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.surah),
+        joinedload(Recording.end).joinedload(AyahPart.mushaf_page),
+        joinedload(Recording.user)
+    ).all()
+
     result = []
     for recording in recordings:
         start = recording.start
@@ -66,6 +76,14 @@ def get_shared_with_me_recordings(db: Session, user_id: str) -> list[DetailedRec
     shared_recordings = db.query(SharedRecording).filter(
         SharedRecording.recording.has(Recording.is_deleted.isnot(True)),
         SharedRecording.recipient_id == user_id,
+    ).options(
+        joinedload(SharedRecording.recording).joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
+        joinedload(SharedRecording.recording).joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.surah),
+        joinedload(SharedRecording.recording).joinedload(Recording.start).joinedload(AyahPart.mushaf_page),
+        joinedload(SharedRecording.recording).joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
+        joinedload(SharedRecording.recording).joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.surah),
+        joinedload(SharedRecording.recording).joinedload(Recording.end).joinedload(AyahPart.mushaf_page),
+        joinedload(SharedRecording.recording).joinedload(Recording.user)
     ).all()
 
     result = []
