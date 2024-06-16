@@ -17,11 +17,13 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session, joinedload, contains_eager
 from azure.core.exceptions import ResourceNotFoundError
 
-from src.dal.models import Recording, AyahPart, Ayah, AyahPartMarker, SharedRecording
+from src.dal.models import Recording, AyahPart, Ayah, AyahPartMarker, SharedRecording, Surah
 from src.dal.database import SessionLocal
 from src.services import azure_blob_storage
 
-from dataset.utils import find_two_largest_values_and_indexes
+from dataset.utils import (
+    find_two_largest_values_and_indexes, check_if_chunk_considered_incorrect, get_formatted_chunks_by_surah_count
+)
 
 nltk.download('punkt')
 
@@ -199,16 +201,19 @@ def get_all_texts_for_recording(start: dict, end: dict, recording_id: uuid.UUID)
     return result_texts_with_ayah_part_info
 
 
-# Тут - пока включаю те рекординги, которые не были проверены, и deleted-рекординги
 shared_recordings_join_condition = and_(
     SharedRecording.recording_id == Recording.id, SharedRecording.is_reviewed == True
 )
-recordings = db.query(Recording).outerjoin(SharedRecording, shared_recordings_join_condition).options(
+
+# Recordings that were not reviewed are also included
+recordings = db.query(Recording).filter(Recording.is_deleted.isnot(True)).outerjoin(SharedRecording, shared_recordings_join_condition).options(
     joinedload(Recording.start).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
     joinedload(Recording.end).joinedload(AyahPart.ayah).joinedload(Ayah.mushaf),
     joinedload(Recording.mistakes),
     contains_eager(Recording.shares)
 ).all()
+
+surah_number_to_title_mapping = {str(surah.id): surah.title_eng for surah in db.query(Surah).all()}
 
 processor = AutoProcessor.from_pretrained("tarteel-ai/whisper-base-ar-quran")
 model = AutoModelForSpeechSeq2Seq.from_pretrained("tarteel-ai/whisper-base-ar-quran")
@@ -220,13 +225,21 @@ model.to(device)
 
 results = list()
 ayah_parts_with_incorrect_markers = set()
-all_recordings_count = db.query(Recording).count()
-counter_initial_recordings = 0
+
+# statistics
+counter_initial_recordings = len(recordings)
 counter_dataset_recordings = 0
+overall_amount_of_dataset_chunks = 0
+overall_amount_of_correct_dataset_chunks = 0
+overall_amount_of_incorrect_dataset_chunks = 0
+overall_amount_of_not_reviewed_dataset_chunks = 0
+chunks_by_riwayah = defaultdict(lambda: 0)
+chunks_by_surah_counter = {}
+overall_chunks_duration_sec = 0
+
 
 for recording in recordings:
         recording_id = recording.id
-        counter_initial_recordings += 1
 
         # loading audio file from Azure
         blob_name: str = recording.audio_url.split("/")[-1]
@@ -313,8 +326,8 @@ for recording in recordings:
             ayah_part_info[2]: ayah_part_info[0] for ayah_part_info in filtered_recording_texts_to_ayah_parts
         }
 
-        # текущая структура:
-        # {ayah_part_id: {reviewer_id: {word_errors: {word: [error type 1, error type 2]}}}
+        # current structure of ayah_parts_to_errors_mapping:
+        # {ayah_part_id: {reviewer_id: {word: [error type 1, error type 2]}}}
 
         # Mapping errors to ayah parts
         ayah_parts_to_errors_mapping = defaultdict(dict)
@@ -357,9 +370,9 @@ for recording in recordings:
                 os.listdir(recording_chunks_dir_path),
                 key=lambda x: int(x.removeprefix("chunk").split(".")[0])
         ):
-            file_path = os.path.join(recording_chunks_dir_path, file_name)
+            chunk_file_path = os.path.join(recording_chunks_dir_path, file_name)
 
-            waveform, sample_rate = torchaudio.load(file_path)
+            waveform, sample_rate = torchaudio.load(chunk_file_path)
 
             # Resample the waveform to the desired sampling rate
             resample_transform = torchaudio.transforms.Resample(sample_rate, 16000)
@@ -391,18 +404,12 @@ for recording in recordings:
                 print(
                     f"Recording: '{recording_id}': recognized text for  chunk '{file_name}' is empty, skipping chunk..."
                 )
-                chunk_result = {
-                    "file_name": os.path.join(recording_chunks_dir_path, file_name),
-                    "recording_id": str(recording_id),
-                    "riwayah": "undefined",
-                    "surah": "undefined",
-                    "ayah": "undefined",
-                    "text": "undefined",
-                    "errors": {},
-                    "mushaf_publisher": "undefined",
-                    "reviewer_id": "undefined" if is_recording_reviewed else "not reviewed"
-                }
-                results.append(chunk_result)
+                # Deleting a chunk without mapped ayah part info
+                os.remove(chunk_file_path)
+                if not os.listdir(recording_chunks_dir_path):
+                    os.rmdir(recording_chunks_dir_path)
+                    # No chunks were added to dataset for this recording
+                    counter_dataset_recordings -= 1
                 continue
 
             most_similar_ind, second_similar_ind, similarity_rate, second_similarity_rate = find_two_nearest_ayahs_for_chunk(
@@ -412,22 +419,16 @@ for recording in recordings:
             if similarity_rate == 0:
                 print(
                     f"Recording '{recording_id}': did not find closest ayah part for chunk '{file_name}', "
-                    f"transcription '{transcription}'"
+                    f"transcription '{transcription}', skipping chunk..."
                 )
-                chunk_result = {
-                    "file_name": os.path.join(recording_chunks_dir_path, file_name),
-                    "recording_id": str(recording_id),
-                    "riwayah": "undefined",
-                    "surah": "undefined",
-                    "ayah": "undefined",
-                    "text": "undefined",
-                    "errors": {},
-                    "mushaf_publisher": "undefined",
-                    "reviewer_id": "undefined" if is_recording_reviewed else "not reviewed"
-                }
+                # Deleting a chunk without mapped ayah part info
+                os.remove(chunk_file_path)
+                if not os.listdir(recording_chunks_dir_path):
+                    os.rmdir(recording_chunks_dir_path)
+                    # No chunks were added to dataset for this recording
+                    counter_dataset_recordings -= 1
 
             else:
-                chunks_with_found_ayah_part += 1
                 mapped_ayah_part = filtered_recording_texts_to_ayah_parts[most_similar_ind]
                 print(
                     f"Recording '{recording_id}': resulting ayah part "
@@ -447,8 +448,15 @@ for recording in recordings:
                             word: list(errors_set) for word, errors_set in errors_by_reviewer.items()
                         }
                         errors_by_reviewers_info.append((reviewer_id, formatted_errors_by_reviewer))
+
+                    if check_if_chunk_considered_incorrect(errors_by_reviewers_info):
+                        overall_amount_of_incorrect_dataset_chunks += 1
+                    else:
+                        overall_amount_of_correct_dataset_chunks += 1
+
                 else:
                     errors_by_reviewers_info.append(("not reviewed", {}))
+                    overall_amount_of_not_reviewed_dataset_chunks += 1
 
                 for errors_marked_by_reviewer in errors_by_reviewers_info:
                     chunk_result = {
@@ -464,18 +472,52 @@ for recording in recordings:
                     }
                     results.append(chunk_result)
 
+                chunks_with_found_ayah_part += 1
+
+                # counting statistics
+                overall_amount_of_dataset_chunks += 1
+                riwayah = mapped_ayah_part_info["riwayah"]
+                chunks_by_riwayah[riwayah] += 1
+                surah = str(mapped_ayah_part_info["surah_number"])
+                if surah not in chunks_by_surah_counter:
+                    chunks_by_surah_counter[surah] = defaultdict(lambda: 0)
+                chunks_by_surah_counter[surah][riwayah] += 1
+                chunk_duration = AudioSegment.from_wav(chunk_file_path).duration_seconds
+                overall_chunks_duration_sec += chunk_duration
+
         print(f"Found ayah parts for {chunks_with_found_ayah_part} out of {chunks_all} audio chunks")
+
+
+# Meta info needed for Hugging Face
+with open("metadata.jsonl", "w") as f:
+    for result in results:
+        f.write(json.dumps(result))
+        f.write("\n")
+
 
 if ayah_parts_with_incorrect_markers:
     ayah_part_ids = [str(ayah_part_id) for ayah_part_id in ayah_parts_with_incorrect_markers]
     print(f"There are incorrect markers for ayah parts: {', '.join(ayah_part_ids)}")
 
 print(
-    f"Collected {counter_dataset_recordings} out of initial {counter_initial_recordings} to a dataset. "
-    f"Overall amount of recordings in a database: {all_recordings_count}"
+    f"Collected {counter_dataset_recordings} out of initial {counter_initial_recordings} recordings to a dataset. "
 )
 
-with open("metadata.jsonl", "w") as f:
-    for result in results:
-        f.write(json.dumps(result))
-        f.write("\n")
+dataset_statistics = {
+    "amount_of_recordings": counter_dataset_recordings,
+    "amount_of_chunks": overall_amount_of_dataset_chunks,
+    "average_chunks_per_recording": round(overall_amount_of_dataset_chunks / counter_dataset_recordings, 2) if counter_dataset_recordings else None,
+    "amount_of_labelled_chunks": overall_amount_of_correct_dataset_chunks + overall_amount_of_incorrect_dataset_chunks,
+    "amount_of_unlabelled_chunks": overall_amount_of_not_reviewed_dataset_chunks,
+    "amount_of_correct_chunks": overall_amount_of_correct_dataset_chunks,
+    "amount_of_incorrect_chunks": overall_amount_of_incorrect_dataset_chunks,
+    "chunks_by_riwayah": dict(chunks_by_riwayah),
+    "chunks_by_surah": get_formatted_chunks_by_surah_count(surah_number_to_title_mapping, chunks_by_surah_counter),
+    "total_chunks_duration": round(overall_chunks_duration_sec, 2),
+    "average_chunk_duration": round(overall_chunks_duration_sec / overall_amount_of_dataset_chunks, 2)
+}
+
+with open("statistics.json", "w") as f:
+    json.dump(dataset_statistics, f)
+
+print("Dataset statistics was loaded to 'statistics.json' file")

@@ -162,3 +162,4 @@ cython_debug/
 # Files for dataset
 quranapp_backend/dataset/temp_audio_chunks
 quranapp_backend/dataset/metadata.jsonl
+quranapp_backend/dataset/statistics.json
